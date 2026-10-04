@@ -17,7 +17,7 @@
 			<option value="gpu">GPU</option>
 		</sdpi-select>
 	</sdpi-item>
-	<sdpi-item label="Karta GPU / GPU #">
+	<sdpi-item id="gpuItem" label="Karta GPU / GPU #">
 		<sdpi-select setting="gpuIndex" default="1">
 			<option value="1">1</option>
 			<option value="2">2</option>
@@ -42,7 +42,7 @@
 			<option value="custom">Własny</option>
 		</sdpi-select>
 	</sdpi-item>
-	<sdpi-item label="Własny kolor">
+	<sdpi-item id="colorItem" label="Własny kolor">
 		<sdpi-color setting="color" default="#38bdf8"></sdpi-color>
 	</sdpi-item>
 	<sdpi-item label="Tło / Background">
@@ -52,7 +52,7 @@
 			<option value="custom">Własne / Custom</option>
 		</sdpi-select>
 	</sdpi-item>
-	<sdpi-item label="Własny kolor tła">
+	<sdpi-item id="bgColorItem" label="Własny kolor tła">
 		<sdpi-color setting="bgColor" default="#1e3a8a"></sdpi-color>
 	</sdpi-item>
 	<sdpi-item label="Obciążenie">
@@ -79,7 +79,7 @@
 	<sdpi-item label="Alarm">
 		<sdpi-checkbox setting="alertFlash" default="true" label="Miganie na czerwono po przekroczeniu progu krytycznego"></sdpi-checkbox>
 	</sdpi-item>
-	<sdpi-item label="Dźwięk alarmu">
+	<sdpi-item id="soundItem" label="Dźwięk alarmu">
 		<sdpi-checkbox setting="alertSound" label="Odtwórz dźwięk (max co 30 s)"></sdpi-checkbox>
 	</sdpi-item>
 	<sdpi-item label="Po naciśnięciu">
@@ -89,5 +89,23 @@
 			<option value="chart">Zmień typ wykresu</option>
 		</sdpi-select>
 	</sdpi-item>
+	<script>
+		// pokazuj pola tylko wtedy, gdy mają sens (w razie błędu zostają wszystkie widoczne)
+		try {
+			const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? "" : "none"; };
+			const apply = (s) => {
+				s = s || {};
+				show("gpuItem", s.sensor === "gpu");
+				show("colorItem", s.colorMode === "custom");
+				show("bgColorItem", s.bgMode === "custom");
+				show("soundItem", s.alertFlash !== false);
+			};
+			const { streamDeckClient } = SDPIComponents;
+			streamDeckClient.getSettings().then((e) => apply(e.payload.settings));
+			streamDeckClient.didReceiveSettings.subscribe((e) => apply(e.payload.settings));
+		} catch (err) {
+			console.error(err);
+		}
+	</script>
 </body>
 </html>

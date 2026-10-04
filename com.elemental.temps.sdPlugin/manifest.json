@@ -3,7 +3,7 @@
   "SDKVersion": 3,
   "UUID": "com.elemental.temps",
   "Name": "Elemental Temps",
-  "Version": "0.2.0.0",
+  "Version": "1.0.0.0",
   "Author": "Rafał",
   "Description": "CPU, GPU, disk temperatures and RAM usage on Stream Deck keys, with a gauge, bar, history graph or big number.",
   "Icon": "imgs/plugin-icon",
@@ -11,8 +11,7 @@
   "CategoryIcon": "imgs/category-icon",
   "CodePath": "bin/plugin.js",
   "Nodejs": {
-    "Version": "20",
-    "Debug": "enabled"
+    "Version": "20"
   },
   "OS": [
     {

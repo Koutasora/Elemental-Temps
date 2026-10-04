@@ -45,3 +45,7 @@ npx streamdeck pack com.elemental.temps.sdPlugin --output dist --force
 - `bin/hwinfo-shm.ps1` – shared memory reader
 
 Idea for later: an own helper based on LibreHardwareMonitorLib (admin, kernel driver) to drop the HWiNFO dependency.
+
+## License
+
+MIT – see [LICENSE](LICENSE). Third-party components bundled with the plugin and their licenses are listed in [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).

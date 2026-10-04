@@ -1,0 +1,4 @@
+node_modules/
+dist/
+com.rafal.systemtemps.sdPlugin/logs/
+com.rafal.systemtemps.sdPlugin/bin/plugin.js

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head lang="pl">
+	<meta charset="utf-8" />
+	<script src="https://sdpi-components.dev/releases/v4/sdpi-components.js"></script>
+</head>
+<body>
+	<sdpi-item label="HWiNFO">
+		<div style="font-size:11px;line-height:1.4;opacity:.85">
+			<b>PL:</b> W HWiNFO włącz <i>Obsługa pamięci współdzielonej</i> (Ustawienia). Darmowa wersja wyłącza ją po ok. 12 h &ndash; włącz ją ponownie.<br />
+			<b>EN:</b> In HWiNFO enable <i>Shared Memory Support</i> (Settings). The free version turns it off after ~12 h &ndash; just enable it again.
+		</div>
+	</sdpi-item>
+	<sdpi-item label="Czujnik / Sensor">
+		<sdpi-select setting="sensor" placeholder="CPU">
+			<option value="cpu">CPU</option>
+			<option value="gpu">GPU</option>
+		</sdpi-select>
+	</sdpi-item>
+	<sdpi-item label="Karta GPU / GPU #">
+		<sdpi-select setting="gpuIndex" default="1">
+			<option value="1">1</option>
+			<option value="2">2</option>
+			<option value="3">3</option>
+			<option value="4">4</option>
+		</sdpi-select>
+	</sdpi-item>
+	<sdpi-item label="Nazwa">
+		<sdpi-checkbox setting="showLabel" default="true" label="Pokaż nazwę (CPU / GPU)"></sdpi-checkbox>
+	</sdpi-item>
+	<sdpi-item label="Wykres">
+		<sdpi-select setting="chart" default="gauge">
+			<option value="gauge">Kołowy wskaźnik</option>
+			<option value="bar">Pasek</option>
+			<option value="line">Wykres historii</option>
+			<option value="number">Tylko liczba</option>
+		</sdpi-select>
+	</sdpi-item>
+	<sdpi-item label="Kolor">
+		<sdpi-select setting="colorMode" default="auto">
+			<option value="auto">Automatyczny (wg progów)</option>
+			<option value="custom">Własny</option>
+		</sdpi-select>
+	</sdpi-item>
+	<sdpi-item label="Własny kolor">
+		<sdpi-color setting="color" default="#38bdf8"></sdpi-color>
+	</sdpi-item>
+	<sdpi-item label="Tło / Background">
+		<sdpi-select setting="bgMode" default="default">
+			<option value="default">Domyślne / Default</option>
+			<option value="black">Czarne / Black</option>
+			<option value="custom">Własne / Custom</option>
+		</sdpi-select>
+	</sdpi-item>
+	<sdpi-item label="Własny kolor tła">
+		<sdpi-color setting="bgColor" default="#1e3a8a"></sdpi-color>
+	</sdpi-item>
+	<sdpi-item label="Obciążenie">
+		<sdpi-checkbox setting="showLoad" default="true" label="Pokaż obciążenie (%)"></sdpi-checkbox>
+	</sdpi-item>
+	<sdpi-item label="Pobór mocy">
+		<sdpi-checkbox setting="showPower" label="Pokaż pobór mocy (W)"></sdpi-checkbox>
+	</sdpi-item>
+	<sdpi-item label="Taktowanie">
+		<sdpi-checkbox setting="showClock" label="Pokaż taktowanie (MHz/GHz)"></sdpi-checkbox>
+	</sdpi-item>
+	<sdpi-item label="Jednostka">
+		<sdpi-select setting="unit" placeholder="°C">
+			<option value="C">°C</option>
+			<option value="F">°F</option>
+		</sdpi-select>
+	</sdpi-item>
+	<sdpi-item label="Ostrzeżenie (°C)">
+		<sdpi-textfield setting="warn" placeholder="70" pattern="^[0-9]{2,3}$"></sdpi-textfield>
+	</sdpi-item>
+	<sdpi-item label="Krytyczna (°C)">
+		<sdpi-textfield setting="crit" placeholder="85" pattern="^[0-9]{2,3}$"></sdpi-textfield>
+	</sdpi-item>
+	<sdpi-item label="Alarm">
+		<sdpi-checkbox setting="alertFlash" default="true" label="Miganie na czerwono po przekroczeniu progu krytycznego"></sdpi-checkbox>
+	</sdpi-item>
+	<sdpi-item label="Dźwięk alarmu">
+		<sdpi-checkbox setting="alertSound" label="Odtwórz dźwięk (max co 30 s)"></sdpi-checkbox>
+	</sdpi-item>
+	<sdpi-item label="Po naciśnięciu">
+		<sdpi-select setting="keyAction" default="refresh">
+			<option value="refresh">Odśwież odczyt</option>
+			<option value="sensor">Przełącz CPU / GPU</option>
+			<option value="chart">Zmień typ wykresu</option>
+		</sdpi-select>
+	</sdpi-item>
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "SDKVersion": 3,
+  "UUID": "com.rafal.systemtemps",
+  "Name": "System Temps",
+  "Version": "0.1.0.0",
+  "Author": "Rafał",
+  "Description": "Temperatura CPU i GPU na klawiszach Stream Deck – z ładnym wskaźnikiem kołowym.",
+  "Icon": "imgs/plugin-icon",
+  "Category": "System Temps",
+  "CategoryIcon": "imgs/category-icon",
+  "CodePath": "bin/plugin.js",
+  "Nodejs": {
+    "Version": "20",
+    "Debug": "enabled"
+  },
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "7.1"
+  },
+  "Actions": [
+    {
+      "UUID": "com.rafal.systemtemps.temperature",
+      "Name": "Temperatura",
+      "Tooltip": "Pokazuje temperaturę CPU lub GPU.",
+      "Icon": "imgs/action-icon",
+      "PropertyInspectorPath": "ui/temperature.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/key-default",
+          "ShowTitle": false
+        }
+      ]
+    }
+  ]
+}

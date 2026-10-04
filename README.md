@@ -23,7 +23,7 @@ Key messages: **Enable HWiNFO Shared Memory** – option is off or expired · **
 
 ## Options
 
-Sensor (CPU / GPU, GPU number), name on/off, chart type, temperature colour (automatic by thresholds or custom), background (default / black / custom), load / power / clock line, °C / °F, warning and critical thresholds, flashing alarm with optional sound, and what a key press does (refresh, switch CPU/GPU, switch chart).
+Sensor (CPU, GPU, Disk temperature, RAM usage; GPU / disk number), name on/off, language of the settings panel (English / Polski), chart type, temperature colour (automatic by thresholds or custom), background (default / black / custom), load / power / clock line, °C / °F, warning and critical thresholds, flashing alarm with optional sound, and what a key press does (refresh, switch CPU/GPU, switch chart).
 
 ## Supported hardware / Sprzęt
 

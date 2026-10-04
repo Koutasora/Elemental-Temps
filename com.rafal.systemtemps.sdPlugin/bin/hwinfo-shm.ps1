@@ -1,5 +1,7 @@
-# Czyta pamięć współdzieloną HWiNFO (Global\HWiNFO_SENS_SM2) i co 2 s wypisuje jedną linię JSON: {"cpu":{...},"gpu":{...}}.
+# Czyta pamięć współdzieloną HWiNFO (Global\HWiNFO_SENS_SM2) i co 2 s wypisuje jedną linię JSON:
+#   {"status":"ok","cpu":{temp,load,power,clock},"gpu":{"0":{...},"1":{...}}}
 # Czujniki dobierane są po nazwach z list priorytetów (Intel / AMD / NVIDIA / Radeon / Intel GPU) – bierzemy pierwszy najlepiej pasujący.
+# Karty GPU rozpoznajemy po nazwie czujnika HWiNFO: "GPU [#N]: ...".
 param([int]$ParentPid = 0)
 $ErrorActionPreference = 'SilentlyContinue'
 Add-Type -AssemblyName System.Core
@@ -22,6 +24,13 @@ $rules = @{
 $coreTempRe = '^(P-core |E-core |Core )\d+$'
 $coreClockRe = '^(P-core |E-core |Core )\d+ Clock$'
 
+function MakeGroup($val, $prefix) {
+	if (-not $val.ContainsKey($prefix + 'Temp')) { return $null }
+	$p = @('"temp":' + (Num $val[$prefix + 'Temp']))
+	foreach ($f in 'Load', 'Power', 'Clock') { if ($val.ContainsKey($prefix + $f)) { $p += ('"' + $f.ToLower() + '":' + (Num $val[$prefix + $f])) } }
+	return '{' + ($p -join ',') + '}'
+}
+
 while ($true) {
 	if ($ParentPid -gt 0 -and -not (Get-Process -Id $ParentPid)) { exit }
 	$line = '{"status":"disabled"}'
@@ -31,8 +40,14 @@ while ($true) {
 		$v = $mmf.CreateViewAccessor(0, 0, [IO.MemoryMappedFiles.MemoryMappedFileAccess]::Read)
 		$age = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - $v.ReadInt64(12)
 		if ($v.ReadUInt32(0) -eq 0x53695748 -and $age -lt 15) {
+			# numer karty GPU dla każdego czujnika ($null = to nie jest czujnik GPU)
+			$so = $v.ReadUInt32(20); $ss = $v.ReadUInt32(24); $sn = $v.ReadUInt32(28)
+			$gpuOf = @{}
+			for ($i = 0; $i -lt $sn; $i++) {
+				if ((Str $v ($so + $i * $ss + 8) 128) -match '^GPU \[#(\d+)\]') { $gpuOf[[uint32]$i] = [int]$Matches[1] }
+			}
 			$ro = $v.ReadUInt32(32); $rs = $v.ReadUInt32(36); $rn = $v.ReadUInt32(40)
-			$best = @{}   # kategoria => @(indeks wzorca, wartość)
+			$best = @{}   # klucz ("cpuTemp" albo "gpuTemp|0") => @(indeks wzorca, wartość)
 			$coreTemps = New-Object System.Collections.Generic.List[double]
 			$coreClocks = New-Object System.Collections.Generic.List[double]
 			for ($i = 0; $i -lt $rn; $i++) {
@@ -40,13 +55,16 @@ while ($true) {
 				$t = $v.ReadUInt32($o)
 				if ($t -ne 1 -and $t -ne 5 -and $t -ne 6 -and $t -ne 7) { continue }
 				$l = Str $v ($o + 12) 128
+				$gpuNum = $gpuOf[$v.ReadUInt32($o + 4)]
 				foreach ($cat in $rules.Keys) {
 					$r = $rules[$cat]
 					if ($r[0] -ne $t) { continue }
+					$key = $cat
+					if ($cat.StartsWith('gpu')) { if ($null -eq $gpuNum) { continue }; $key = "$cat|$gpuNum" }
 					$pats = $r[1]
 					for ($k = 0; $k -lt $pats.Count; $k++) {
 						if ($l -match $pats[$k]) {
-							if (-not $best.ContainsKey($cat) -or $k -lt $best[$cat][0]) { $best[$cat] = @($k, $v.ReadDouble($o + 284)) }
+							if (-not $best.ContainsKey($key) -or $k -lt $best[$key][0]) { $best[$key] = @($k, $v.ReadDouble($o + 284)) }
 							break
 						}
 					}
@@ -54,21 +72,24 @@ while ($true) {
 				if ($t -eq 1 -and $l -match $coreTempRe) { $coreTemps.Add($v.ReadDouble($o + 284)) }
 				if ($t -eq 6 -and $l -match $coreClockRe) { $coreClocks.Add($v.ReadDouble($o + 284)) }
 			}
-			$val = @{}
-			foreach ($c in $best.Keys) { $val[$c] = $best[$c][1] }
-			if (-not $val.ContainsKey('cpuTemp') -and $coreTemps.Count) { $val['cpuTemp'] = ($coreTemps | Measure-Object -Maximum).Maximum }
-			if (-not $val.ContainsKey('cpuClock') -and $coreClocks.Count) { $val['cpuClock'] = ($coreClocks | Measure-Object -Average).Average }
-
-			function MakeGroup($prefix) {
-				if (-not $val.ContainsKey($prefix + 'Temp')) { return $null }
-				$p = @('"temp":' + (Num $val[$prefix + 'Temp']))
-				foreach ($f in 'Load', 'Power', 'Clock') { if ($val.ContainsKey($prefix + $f)) { $p += ('"' + $f.ToLower() + '":' + (Num $val[$prefix + $f])) } }
-				return '{' + ($p -join ',') + '}'
+			# wartości CPU
+			$cpuVal = @{}
+			foreach ($c in 'cpuTemp', 'cpuPower', 'cpuLoad', 'cpuClock') { if ($best.ContainsKey($c)) { $cpuVal[$c] = $best[$c][1] } }
+			if (-not $cpuVal.ContainsKey('cpuTemp') -and $coreTemps.Count) { $cpuVal['cpuTemp'] = ($coreTemps | Measure-Object -Maximum).Maximum }
+			if (-not $cpuVal.ContainsKey('cpuClock') -and $coreClocks.Count) { $cpuVal['cpuClock'] = ($coreClocks | Measure-Object -Average).Average }
+			# wartości GPU per karta
+			$gpuNums = @($best.Keys | Where-Object { $_.StartsWith('gpu') } | ForEach-Object { [int]($_.Split('|')[1]) } | Sort-Object -Unique)
+			$gpuJson = @()
+			foreach ($n in $gpuNums) {
+				$gv = @{}
+				foreach ($c in 'gpuTemp', 'gpuPower', 'gpuLoad', 'gpuClock') { if ($best.ContainsKey("$c|$n")) { $gv[$c] = $best["$c|$n"][1] } }
+				$g = MakeGroup $gv 'gpu'
+				if ($g) { $gpuJson += ('"' + $n + '":' + $g) }
 			}
-			$parts = @()
-			$cpu = MakeGroup 'cpu'; if ($cpu) { $parts += '"cpu":' + $cpu }
-			$gpu = MakeGroup 'gpu'; if ($gpu) { $parts += '"gpu":' + $gpu }
-			$line = '{' + (@('"status":"ok"') + $parts -join ',') + '}'
+			$parts = @('"status":"ok"')
+			$cpu = MakeGroup $cpuVal 'cpu'; if ($cpu) { $parts += '"cpu":' + $cpu }
+			if ($gpuJson.Count) { $parts += '"gpu":{' + ($gpuJson -join ',') + '}' }
+			$line = '{' + ($parts -join ',') + '}'
 		}
 		$v.Dispose(); $mmf.Dispose()
 	} catch { }

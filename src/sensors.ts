@@ -8,26 +8,10 @@ const run = promisify(execFile);
 
 export type Reading = { temp: number; load?: number; power?: number; clock?: number; source: string };
 
-/** GPU NVIDIA przez nvidia-smi (instalowane ze sterownikiem). */
+/** GPU: HWiNFO pamięć współdzielona (każda karta osobno, po nazwie czujnika "GPU [#N]"). */
 export async function readGpu(index = 0): Promise<Reading | null> {
-	// HWiNFO zwraca tylko pierwszą kartę, więc jako zapas służy wyłącznie dla indeksu 0
-	return (await readGpuNvidia(index)) ?? (index === 0 ? readShm("gpu") : null);
-}
-
-async function readGpuNvidia(index: number): Promise<Reading | null> {
-	try {
-		const { stdout } = await run(
-			"nvidia-smi",
-			["-i", String(index), "--query-gpu=temperature.gpu,utilization.gpu,power.draw,clocks.gr", "--format=csv,noheader,nounits"],
-			{ timeout: 3000, windowsHide: true },
-		);
-		const [t, l, p, c] = stdout.trim().split(/\r?\n/)[0].split(",").map((s) => parseFloat(s));
-		return Number.isFinite(t)
-			? { temp: t, load: Number.isFinite(l) ? l : undefined, power: Number.isFinite(p) ? p : undefined, clock: Number.isFinite(c) ? c : undefined, source: "nvidia-smi" }
-			: null;
-	} catch {
-		return null;
-	}
+	ensureShm();
+	return Date.now() - shmLast.at < 8000 ? (shmLast.gpus.get(index) ?? null) : null;
 }
 
 /** CPU: HWiNFO pamięć współdzielona -> HWiNFO rejestr ("Report value in Gadget") -> LibreHardwareMonitor (HTTP). */
@@ -38,7 +22,7 @@ export async function readCpu(): Promise<Reading | null> {
 // --- HWiNFO shared memory: jeden długo działający proces PowerShell, jedna linia JSON na 2 s ---
 let shmProc: ChildProcess | undefined;
 export type ShmStatus = "ok" | "notrunning" | "disabled" | "unknown";
-let shmLast: { cpu: Reading | null; gpu: Reading | null; status: ShmStatus; at: number } = { cpu: null, gpu: null, status: "unknown", at: 0 };
+let shmLast: { cpu: Reading | null; gpus: Map<number, Reading>; status: ShmStatus; at: number } = { cpu: null, gpus: new Map(), status: "unknown", at: 0 };
 let shmStartedAt = 0;
 
 function ensureShm(): void {
@@ -52,9 +36,9 @@ function ensureShm(): void {
 	shmProc = proc;
 	createInterface({ input: proc.stdout! }).on("line", (line) => {
 		try {
-			const j = JSON.parse(line) as { status?: ShmStatus; cpu?: Omit<Reading, "source">; gpu?: Omit<Reading, "source"> };
+			const j = JSON.parse(line) as { status?: ShmStatus; cpu?: Omit<Reading, "source">; gpu?: Record<string, Omit<Reading, "source">> };
 			const src = "HWiNFO: pamięć współdzielona";
-			shmLast = { at: Date.now(), status: j.status ?? "unknown", cpu: j.cpu ? { ...j.cpu, source: src } : null, gpu: j.gpu ? { ...j.gpu, source: src } : null };
+			shmLast = { at: Date.now(), status: j.status ?? "unknown", cpu: j.cpu ? { ...j.cpu, source: src } : null, gpus: new Map(Object.entries(j.gpu ?? {}).map(([n, r]) => [Number(n), { ...r, source: src }])) };
 		} catch {
 			/* ignoruj śmieci */
 		}
@@ -65,11 +49,10 @@ function ensureShm(): void {
 	process.on("exit", () => proc.kill());
 }
 
-function readShm(kind: "cpu" | "gpu"): Reading | null {
+function readCpuShm(): Reading | null {
 	ensureShm();
-	return Date.now() - shmLast.at < 8000 ? shmLast[kind] : null;
+	return Date.now() - shmLast.at < 8000 ? shmLast.cpu : null;
 }
-const readCpuShm = () => readShm("cpu");
 
 /** Stan źródła HWiNFO – do komunikatu na klawiszu, gdy brak danych. */
 export function shmStatus(): ShmStatus {
@@ -80,7 +63,7 @@ const CPU_PREFERENCE = [/cpu package/i, /tctl|tdie/i, /cpu.*(temp|\(tctl)/i, /^c
 
 async function readCpuHwinfo(): Promise<Reading | null> {
 	try {
-		const { stdout } = await run("reg", ["query", "HKCU\SOFTWARE\HWiNFO64\VSB"], { timeout: 3000, windowsHide: true });
+		const { stdout } = await run("reg", ["query", "HKCU\\SOFTWARE\\HWiNFO64\\VSB"], { timeout: 3000, windowsHide: true });
 		const labels = new Map<string, string>();
 		const raws = new Map<string, string>();
 		for (const line of stdout.split(/\r?\n/)) {

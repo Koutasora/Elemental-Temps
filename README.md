@@ -14,7 +14,7 @@ Wtyczka Stream Deck pokazująca temperaturę CPU i GPU na klawiszach: wskaźnik 
 1. **EN:** In HWiNFO open *Settings* and enable **Shared Memory Support**.
    **PL:** W HWiNFO otwórz *Ustawienia* i włącz **Obsługę pamięci współdzielonej**.
 2. Install `com.elemental.temps.streamDeckPlugin` (double-click / dwuklik).
-3. Drag **Elemental Temps → Temperature** onto a key and pick CPU or GPU.
+3. Drag one of **CPU Temperature**, **GPU Temperature**, **Disk Temperature** or **RAM Usage** (category **Elemental Temps**) onto a key. Each has its own settings; disk and GPU let you pick the exact drive / card from a list.
 
 > The free version of HWiNFO switches Shared Memory off after about 12 hours. When that happens the key shows **Enable HWiNFO Shared Memory** – just enable it again, the data comes back by itself.
 > Darmowa wersja HWiNFO wyłącza pamięć współdzieloną po ok. 12 godzinach. Klawisz pokaże wtedy **Enable HWiNFO Shared Memory** – wystarczy włączyć ją ponownie.
@@ -23,7 +23,7 @@ Key messages: **Enable HWiNFO Shared Memory** – option is off or expired · **
 
 ## Options
 
-Sensor (CPU, GPU, Disk temperature, RAM usage; GPU / disk number), name on/off, language of the settings panel (English / Polski), chart type, temperature colour (automatic by thresholds or custom), background (default / black / custom), load / power / clock line, °C / °F, warning and critical thresholds, flashing alarm with optional sound, and what a key press does (refresh, switch CPU/GPU, switch chart).
+Sensor name on/off, language of the settings panel (English / Polski), chart type, temperature colour (automatic by thresholds or custom), background (default / black / custom), load / power / clock line, °C / °F, warning and critical thresholds, flashing alarm with optional sound, and what a key press does (refresh, switch CPU/GPU, switch chart).
 
 ## Supported hardware / Sprzęt
 
@@ -40,7 +40,8 @@ npx streamdeck pack com.elemental.temps.sdPlugin --output dist --force
 
 - `src/sensors.ts` – readers (HWiNFO shared memory via a long-running PowerShell process, registry and LibreHardwareMonitor fallbacks for CPU)
 - `src/render.ts` – SVG key rendering
-- `src/plugin.ts` – actions, polling, alarm
+- `src/plugin.ts` – four actions (cpu, gpu, disk, ram), polling, alarm
+- `pi/template.html` + `scripts/gen-pi.mjs` – settings page template; the build generates one page per component (`ui/cpu.html`, ...)
 - `bin/hwinfo-shm.ps1` – shared memory reader
 
 Idea for later: an own helper based on LibreHardwareMonitorLib (admin, kernel driver) to drop the HWiNFO dependency.

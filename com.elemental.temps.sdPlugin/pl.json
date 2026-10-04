@@ -1,8 +1,20 @@
 {
 	"Name": "Elemental Temps",
-	"Description": "Temperatura CPU i GPU na klawiszach Stream Deck: wskaźnik kołowy, pasek, wykres historii albo duża liczba.",
-	"com.elemental.temps.temperature": {
-		"Name": "Temperatura",
-		"Tooltip": "Pokazuje temperaturę CPU lub GPU."
+	"Description": "Temperatury CPU, GPU i dysków oraz zajętość RAM na klawiszach Stream Deck: wskaźnik kołowy, pasek, wykres historii albo duża liczba.",
+	"com.elemental.temps.cpu": {
+		"Name": "Temperatura CPU",
+		"Tooltip": "Pokazuje temperaturę, obciążenie, pobór mocy i taktowanie procesora."
+	},
+	"com.elemental.temps.gpu": {
+		"Name": "Temperatura GPU",
+		"Tooltip": "Pokazuje temperaturę, obciążenie, pobór mocy i taktowanie karty graficznej."
+	},
+	"com.elemental.temps.disk": {
+		"Name": "Temperatura dysku",
+		"Tooltip": "Pokazuje temperaturę wybranego dysku."
+	},
+	"com.elemental.temps.ram": {
+		"Name": "Zajętość RAM",
+		"Tooltip": "Pokazuje, ile pamięci RAM jest używane."
 	}
 }

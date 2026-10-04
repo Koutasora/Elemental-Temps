@@ -8,7 +8,21 @@ import { freemem, totalmem } from "node:os";
 const run = promisify(execFile);
 
 /** `temp` to główna wartość odczytu: °C dla CPU/GPU/dysku, % dla RAM. `name` – krótka nazwa (np. litera dysku). */
-export type Reading = { temp: number; load?: number; power?: number; clock?: number; name?: string; source: string };
+export type Reading = { temp: number; load?: number; power?: number; clock?: number; name?: string; model?: string; source: string };
+
+export type ListItem = { label: string; value: string };
+
+/** Lista dysków do wyboru w panelu: "C: · WD_BLACK SN770 500GB", wartość = numer (od 1). */
+export function listDisks(): ListItem[] {
+	ensureShm();
+	return [...shmLast.disks.entries()].sort((a, b) => a[0] - b[0]).map(([i, r]) => ({ value: String(i + 1), label: [r.name, r.model].filter(Boolean).join(" · ") || `Disk ${i + 1}` }));
+}
+
+/** Lista kart graficznych do wyboru w panelu, wartość = numer (od 1). */
+export function listGpus(): ListItem[] {
+	ensureShm();
+	return [...shmLast.gpus.entries()].sort((a, b) => a[0] - b[0]).map(([i, r]) => ({ value: String(i + 1), label: r.name || `GPU ${i + 1}` }));
+}
 
 /** Dysk (SMART "Drive Temperature") z HWiNFO – w kolejności czujników S.M.A.R.T. */
 export async function readDisk(index = 0): Promise<Reading | null> {

@@ -1,6 +1,6 @@
 import streamDeck, { action, KeyAction, KeyDownEvent, SingletonAction, WillAppearEvent, WillDisappearEvent, DidReceiveSettingsEvent } from "@elgato/streamdeck";
 import { spawn } from "node:child_process";
-import { readCpu, readDisk, readGpu, readRam, Reading, shmStatus } from "./sensors";
+import { ListItem, listDisks, listGpus, readCpu, readDisk, readGpu, readRam, Reading, shmStatus } from "./sensors";
 import { ChartType, renderKey, toDataUri } from "./render";
 
 type Sensor = "cpu" | "gpu" | "disk" | "ram";
@@ -23,7 +23,7 @@ type Settings = {
 	crit?: number | string;
 	alertFlash?: boolean;
 	alertSound?: boolean;
-	keyAction?: "refresh" | "sensor" | "chart";
+	keyAction?: "refresh" | "chart";
 };
 
 type Entry = { action: KeyAction<Settings>; settings: Settings; alerting: boolean };
@@ -35,7 +35,6 @@ const DEFAULTS: Record<Sensor, { warn: number; crit: number; min: number; max: n
 	disk: { warn: 50, crit: 65, min: 20, max: 80, kind: "temp" },
 	ram: { warn: 80, crit: 92, min: 0, max: 100, kind: "percent" },
 };
-const SENSORS: Sensor[] = ["cpu", "gpu", "disk", "ram"];
 const POLL_MS = 2000;
 const FLASH_MS = 600;
 const HISTORY_LEN = 30;
@@ -170,11 +169,13 @@ function ensureTimers(): void {
 	}
 }
 
-@action({ UUID: "com.elemental.temps.temperature" })
+/** Czujnik wynika z akcji (UUID kończy się na .cpu / .gpu / .disk / .ram), a nie z ustawień klawisza. */
+const withSensor = (s: Settings, manifestId: string): Settings => ({ ...s, sensor: manifestId.split(".").pop() as Sensor });
+
 class Temperature extends SingletonAction<Settings> {
 	override async onWillAppear(ev: WillAppearEvent<Settings>): Promise<void> {
 		if (!ev.action.isKey()) return;
-		visible.set(ev.action.id, { action: ev.action, settings: ev.payload.settings, alerting: false });
+		visible.set(ev.action.id, { action: ev.action, settings: withSensor(ev.payload.settings, ev.action.manifestId), alerting: false });
 		ensureTimers();
 		await draw(ev.action.id);
 		void tick();
@@ -187,25 +188,41 @@ class Temperature extends SingletonAction<Settings> {
 
 	override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<Settings>): Promise<void> {
 		const e = visible.get(ev.action.id);
-		if (e) e.settings = ev.payload.settings;
+		if (e) e.settings = withSensor(ev.payload.settings, ev.action.manifestId);
 		await tick();
 	}
 
 	override async onKeyDown(ev: KeyDownEvent<Settings>): Promise<void> {
 		const s = ev.payload.settings;
-		streamDeck.logger.info(`keyDown: akcja=${s.keyAction ?? "refresh"} czujnik=${sensorOf(s)} wykres=${s.chart ?? "gauge"}`);
-		let next: Settings | undefined;
-		if (s.keyAction === "sensor") next = { ...s, sensor: SENSORS[(SENSORS.indexOf(sensorOf(s)) + 1) % SENSORS.length] };
-		else if (s.keyAction === "chart") next = { ...s, chart: CHARTS[(CHARTS.indexOf(s.chart ?? "gauge") + 1) % CHARTS.length] };
-		if (next) {
+		streamDeck.logger.info(`keyDown: ${ev.action.manifestId} akcja=${s.keyAction ?? "refresh"} wykres=${s.chart ?? "gauge"}`);
+		if (s.keyAction === "chart") {
+			const next: Settings = { ...s, chart: CHARTS[(CHARTS.indexOf(s.chart ?? "gauge") + 1) % CHARTS.length] };
 			// stan lokalny aktualizujemy od razu – nie czekamy na didReceiveSettings
 			const e = visible.get(ev.action.id);
-			if (e) e.settings = next;
+			if (e) e.settings = withSensor(next, ev.action.manifestId);
 			await ev.action.setSettings(next);
 		}
 		await tick(); // zawsze też odśwież odczyt
 	}
 }
 
-streamDeck.actions.registerAction(new Temperature());
+@action({ UUID: "com.elemental.temps.cpu" })
+class CpuTemperature extends Temperature {}
+@action({ UUID: "com.elemental.temps.gpu" })
+class GpuTemperature extends Temperature {}
+@action({ UUID: "com.elemental.temps.disk" })
+class DiskTemperature extends Temperature {}
+@action({ UUID: "com.elemental.temps.ram" })
+class RamUsage extends Temperature {}
+
+for (const a of [new CpuTemperature(), new GpuTemperature(), new DiskTemperature(), new RamUsage()]) streamDeck.actions.registerAction(a);
+
+/** Listy do wyboru w panelu (sdpi-select z datasource): panel wysyła { event: "disks" | "gpus" }, odsyłamy { event, items }. */
+const withFallback = (items: ListItem[], name: string): ListItem[] => (items.length ? items : [1, 2, 3, 4].map((n) => ({ value: String(n), label: `${name} ${n}` })));
+streamDeck.ui.onSendToPlugin((ev) => {
+	const event = (ev.payload as { event?: string } | null)?.event;
+	if (event === "disks") void streamDeck.ui.sendToPropertyInspector({ event, items: withFallback(listDisks(), "Disk") });
+	else if (event === "gpus") void streamDeck.ui.sendToPropertyInspector({ event, items: withFallback(listGpus(), "GPU") });
+});
+
 void streamDeck.connect();

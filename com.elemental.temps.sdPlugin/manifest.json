@@ -3,9 +3,9 @@
   "SDKVersion": 3,
   "UUID": "com.elemental.temps",
   "Name": "Elemental Temps",
-  "Version": "0.1.0.0",
+  "Version": "0.2.0.0",
   "Author": "Rafał",
-  "Description": "CPU and GPU temperature on Stream Deck keys, with a gauge, bar, history graph or big number.",
+  "Description": "CPU, GPU, disk temperatures and RAM usage on Stream Deck keys, with a gauge, bar, history graph or big number.",
   "Icon": "imgs/plugin-icon",
   "Category": "Elemental Temps",
   "CategoryIcon": "imgs/category-icon",
@@ -25,11 +25,59 @@
   },
   "Actions": [
     {
-      "UUID": "com.elemental.temps.temperature",
-      "Name": "Temperature",
-      "Tooltip": "Shows CPU or GPU temperature.",
+      "UUID": "com.elemental.temps.cpu",
+      "Name": "CPU Temperature",
+      "Tooltip": "Shows CPU temperature, load, power and clock speed.",
       "Icon": "imgs/action-icon",
-      "PropertyInspectorPath": "ui/temperature.html",
+      "PropertyInspectorPath": "ui/cpu.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/key-default",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "UUID": "com.elemental.temps.gpu",
+      "Name": "GPU Temperature",
+      "Tooltip": "Shows graphics card temperature, load, power and clock speed.",
+      "Icon": "imgs/action-icon",
+      "PropertyInspectorPath": "ui/gpu.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/key-default",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "UUID": "com.elemental.temps.disk",
+      "Name": "Disk Temperature",
+      "Tooltip": "Shows the temperature of a chosen disk.",
+      "Icon": "imgs/action-icon",
+      "PropertyInspectorPath": "ui/disk.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/key-default",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "UUID": "com.elemental.temps.ram",
+      "Name": "RAM Usage",
+      "Tooltip": "Shows how much memory is in use.",
+      "Icon": "imgs/action-icon",
+      "PropertyInspectorPath": "ui/ram.html",
       "Controllers": [
         "Keypad"
       ],

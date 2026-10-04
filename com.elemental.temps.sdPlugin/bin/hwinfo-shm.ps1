@@ -43,15 +43,18 @@ while ($true) {
 			# numer karty GPU dla każdego czujnika ($null = to nie jest czujnik GPU)
 			$so = $v.ReadUInt32(20); $ss = $v.ReadUInt32(24); $sn = $v.ReadUInt32(28)
 			$gpuOf = @{}
-			$diskOf = @{}; $diskName = @{}; $diskTemp = @{}; $diskCount = 0
+			$gpuName = @{}; $diskOf = @{}; $diskName = @{}; $diskModel = @{}; $diskTemp = @{}; $diskCount = 0
 			for ($i = 0; $i -lt $sn; $i++) {
 				$sname = Str $v ($so + $i * $ss + 8) 128
-				if ($sname -match '^GPU \[#(\d+)\]') { $gpuOf[[uint32]$i] = [int]$Matches[1] }
+				if ($sname -match '^GPU \[#(\d+)\]') {
+					$gn = [int]$Matches[1]; $gpuOf[[uint32]$i] = $gn
+					if (-not $gpuName.ContainsKey($gn)) { $gpuName[$gn] = ((($sname -replace '^GPU \[#\d+\]: ', '') -split ':')[0] -replace '["\\]', '') }
+				}
 				elseif ($sname -match '^S\.M\.A\.R\.T\.: (.*)$') {
 					# dysk: litery z "[C:]" albo model sprzed " ("
 					$rest = $Matches[1]
 					if ($rest -match '\[([A-Za-z]:[^\]]*)\]') { $nm = $Matches[1] } else { $nm = ($rest -split ' \(')[0] }
-					$diskOf[[uint32]$i] = $diskCount; $diskName[$diskCount] = ($nm -replace '["\\]', ''); $diskCount++
+					$diskOf[[uint32]$i] = $diskCount; $diskName[$diskCount] = ($nm -replace '["\\]', ''); $diskModel[$diskCount] = ((($rest -split ' \(')[0]) -replace '["\\]', ''); $diskCount++
 				}
 			}
 			$ro = $v.ReadUInt32(32); $rs = $v.ReadUInt32(36); $rn = $v.ReadUInt32(40)
@@ -96,10 +99,10 @@ while ($true) {
 				$gv = @{}
 				foreach ($c in 'gpuTemp', 'gpuPower', 'gpuLoad', 'gpuClock') { if ($best.ContainsKey("$c|$n")) { $gv[$c] = $best["$c|$n"][1] } }
 				$g = MakeGroup $gv 'gpu'
-				if ($g) { $gpuJson += ('"' + $n + '":' + $g) }
+				if ($g) { $g = $g.TrimEnd('}') + ',"name":"' + $gpuName[$n] + '"}'; $gpuJson += ('"' + $n + '":' + $g) }
 			}
 			$diskJson = @()
-			foreach ($dn in ($diskTemp.Keys | Sort-Object)) { $diskJson += ('"' + $dn + '":{"temp":' + (Num $diskTemp[$dn]) + ',"name":"' + $diskName[$dn] + '"}') }
+			foreach ($dn in ($diskTemp.Keys | Sort-Object)) { $diskJson += ('"' + $dn + '":{"temp":' + (Num $diskTemp[$dn]) + ',"name":"' + $diskName[$dn] + '","model":"' + $diskModel[$dn] + '"}') }
 			$parts = @('"status":"ok"')
 			$cpu = MakeGroup $cpuVal 'cpu'; if ($cpu) { $parts += '"cpu":' + $cpu }
 			if ($gpuJson.Count) { $parts += '"gpu":{' + ($gpuJson -join ',') + '}' }

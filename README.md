@@ -4,6 +4,10 @@ CPU and GPU temperature on Stream Deck keys, with a circular gauge, bar, history
 
 Wtyczka Stream Deck pokazująca temperaturę CPU i GPU na klawiszach: wskaźnik kołowy, pasek, wykres historii albo sama liczba. Opcjonalnie obciążenie, pobór mocy i taktowanie. Przy temperaturze krytycznej klawisz miga na czerwono.
 
+![Elemental Temps keys](docs/showcase.png)
+
+*Example keys with sample values: gauge, bar, history graph, big number, critical alarm, custom colors and background, and the message shown when HWiNFO Shared Memory is off.*
+
 ## Requirements / Wymagania
 
 - Windows 10/11, Stream Deck software **7.1+**

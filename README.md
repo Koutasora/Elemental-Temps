@@ -13,8 +13,8 @@ Wtyczka Stream Deck pokazująca temperaturę CPU i GPU na klawiszach: wskaźnik 
 
 1. **EN:** In HWiNFO open *Settings* and enable **Shared Memory Support**.
    **PL:** W HWiNFO otwórz *Ustawienia* i włącz **Obsługę pamięci współdzielonej**.
-2. Install `com.rafal.systemtemps.streamDeckPlugin` (double-click / dwuklik).
-3. Drag **Elemental Temps → Temperatura** onto a key and pick CPU or GPU.
+2. Install `com.elemental.temps.streamDeckPlugin` (double-click / dwuklik).
+3. Drag **Elemental Temps → Temperature** onto a key and pick CPU or GPU.
 
 > The free version of HWiNFO switches Shared Memory off after about 12 hours. When that happens the key shows **Enable HWiNFO Shared Memory** – just enable it again, the data comes back by itself.
 > Darmowa wersja HWiNFO wyłącza pamięć współdzieloną po ok. 12 godzinach. Klawisz pokaże wtedy **Enable HWiNFO Shared Memory** – wystarczy włączyć ją ponownie.
@@ -35,7 +35,7 @@ Sensors are matched by HWiNFO label, with priority lists for Intel (`CPU Package
 npm install
 npm run deploy      # build + restart the plugin (Stream Deck restarts it by itself)
 npm run typecheck
-npx streamdeck pack com.rafal.systemtemps.sdPlugin --output dist --force
+npx streamdeck pack com.elemental.temps.sdPlugin --output dist --force
 ```
 
 - `src/sensors.ts` – readers (HWiNFO shared memory via a long-running PowerShell process, registry and LibreHardwareMonitor fallbacks for CPU)

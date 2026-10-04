@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+	<meta charset="utf-8" />
+	<script src="sdpi-components.js"></script>
+</head>
+<body>
+	<sdpi-item label="HWiNFO">
+		<div style="font-size:11px;line-height:1.4;opacity:.85">
+			In HWiNFO enable <i>Shared Memory Support</i> (Settings). The free version turns it off after ~12 h &ndash; just enable it again.
+		</div>
+	</sdpi-item>
+	<sdpi-item label="Sensor">
+		<sdpi-select setting="sensor" placeholder="CPU">
+			<option value="cpu">CPU</option>
+			<option value="gpu">GPU</option>
+		</sdpi-select>
+	</sdpi-item>
+	<sdpi-item id="gpuItem" label="GPU #">
+		<sdpi-select setting="gpuIndex" default="1">
+			<option value="1">1</option>
+			<option value="2">2</option>
+			<option value="3">3</option>
+			<option value="4">4</option>
+		</sdpi-select>
+	</sdpi-item>
+	<sdpi-item label="Name">
+		<sdpi-checkbox setting="showLabel" default="true" label="Show name (CPU / GPU)"></sdpi-checkbox>
+	</sdpi-item>
+	<sdpi-item label="Chart">
+		<sdpi-select setting="chart" default="gauge">
+			<option value="gauge">Gauge</option>
+			<option value="bar">Bar</option>
+			<option value="line">History graph</option>
+			<option value="number">Number only</option>
+		</sdpi-select>
+	</sdpi-item>
+	<sdpi-item label="Color">
+		<sdpi-select setting="colorMode" default="auto">
+			<option value="auto">Automatic (by thresholds)</option>
+			<option value="custom">Custom</option>
+		</sdpi-select>
+	</sdpi-item>
+	<sdpi-item id="colorItem" label="Custom color">
+		<sdpi-color setting="color" default="#38bdf8"></sdpi-color>
+	</sdpi-item>
+	<sdpi-item label="Background">
+		<sdpi-select setting="bgMode" default="default">
+			<option value="default">Default</option>
+			<option value="black">Black</option>
+			<option value="custom">Custom</option>
+		</sdpi-select>
+	</sdpi-item>
+	<sdpi-item id="bgColorItem" label="Custom background">
+		<sdpi-color setting="bgColor" default="#1e3a8a"></sdpi-color>
+	</sdpi-item>
+	<sdpi-item label="Load">
+		<sdpi-checkbox setting="showLoad" default="true" label="Show load (%)"></sdpi-checkbox>
+	</sdpi-item>
+	<sdpi-item label="Power">
+		<sdpi-checkbox setting="showPower" label="Show power draw (W)"></sdpi-checkbox>
+	</sdpi-item>
+	<sdpi-item label="Clock">
+		<sdpi-checkbox setting="showClock" label="Show clock speed (MHz/GHz)"></sdpi-checkbox>
+	</sdpi-item>
+	<sdpi-item label="Unit">
+		<sdpi-select setting="unit" placeholder="°C">
+			<option value="C">°C</option>
+			<option value="F">°F</option>
+		</sdpi-select>
+	</sdpi-item>
+	<sdpi-item label="Warning (°C)">
+		<sdpi-textfield setting="warn" placeholder="70" pattern="^[0-9]{2,3}$"></sdpi-textfield>
+	</sdpi-item>
+	<sdpi-item label="Critical (°C)">
+		<sdpi-textfield setting="crit" placeholder="85" pattern="^[0-9]{2,3}$"></sdpi-textfield>
+	</sdpi-item>
+	<sdpi-item label="Alarm">
+		<sdpi-checkbox setting="alertFlash" default="true" label="Flash red above the critical threshold"></sdpi-checkbox>
+	</sdpi-item>
+	<sdpi-item id="soundItem" label="Alarm sound">
+		<sdpi-checkbox setting="alertSound" label="Play a sound (at most every 30 s)"></sdpi-checkbox>
+	</sdpi-item>
+	<sdpi-item label="On key press">
+		<sdpi-select setting="keyAction" default="refresh">
+			<option value="refresh">Refresh reading</option>
+			<option value="sensor">Switch CPU / GPU</option>
+			<option value="chart">Switch chart type</option>
+		</sdpi-select>
+	</sdpi-item>
+	<script>
+		// show fields only when they make sense (if this fails, all fields simply stay visible)
+		try {
+			const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? "" : "none"; };
+			const apply = (s) => {
+				s = s || {};
+				show("gpuItem", s.sensor === "gpu");
+				show("colorItem", s.colorMode === "custom");
+				show("bgColorItem", s.bgMode === "custom");
+				show("soundItem", s.alertFlash !== false);
+			};
+			const { streamDeckClient } = SDPIComponents;
+			streamDeckClient.getSettings().then((e) => apply(e.payload.settings));
+			streamDeckClient.didReceiveSettings.subscribe((e) => apply(e.payload.settings));
+		} catch (err) {
+			console.error(err);
+		}
+	</script>
+</body>
+</html>

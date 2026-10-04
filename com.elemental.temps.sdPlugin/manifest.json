@@ -1,11 +1,11 @@
 {
   "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
   "SDKVersion": 3,
-  "UUID": "com.rafal.systemtemps",
+  "UUID": "com.elemental.temps",
   "Name": "Elemental Temps",
   "Version": "0.1.0.0",
   "Author": "Rafał",
-  "Description": "Temperatura CPU i GPU na klawiszach Stream Deck – z ładnym wskaźnikiem kołowym.",
+  "Description": "CPU and GPU temperature on Stream Deck keys, with a gauge, bar, history graph or big number.",
   "Icon": "imgs/plugin-icon",
   "Category": "Elemental Temps",
   "CategoryIcon": "imgs/category-icon",
@@ -25,9 +25,9 @@
   },
   "Actions": [
     {
-      "UUID": "com.rafal.systemtemps.temperature",
-      "Name": "Temperatura",
-      "Tooltip": "Pokazuje temperaturę CPU lub GPU.",
+      "UUID": "com.elemental.temps.temperature",
+      "Name": "Temperature",
+      "Tooltip": "Shows CPU or GPU temperature.",
       "Icon": "imgs/action-icon",
       "PropertyInspectorPath": "ui/temperature.html",
       "Controllers": [

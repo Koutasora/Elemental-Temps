@@ -1,4 +1,4 @@
 node_modules/
 dist/
-com.rafal.systemtemps.sdPlugin/logs/
-com.rafal.systemtemps.sdPlugin/bin/plugin.js
+com.elemental.temps.sdPlugin/logs/
+com.elemental.temps.sdPlugin/bin/plugin.js

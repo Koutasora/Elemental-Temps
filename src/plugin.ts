@@ -152,7 +152,7 @@ function ensureTimers(): void {
 	}
 }
 
-@action({ UUID: "com.rafal.systemtemps.temperature" })
+@action({ UUID: "com.elemental.temps.temperature" })
 class Temperature extends SingletonAction<Settings> {
 	override async onWillAppear(ev: WillAppearEvent<Settings>): Promise<void> {
 		if (!ev.action.isKey()) return;

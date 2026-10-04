@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "esbuild src/plugin.ts --bundle --platform=node --format=esm --target=node20 --banner:js=\"import{createRequire as __cr}from'module';const require=__cr(import.meta.url);\" --outfile=com.rafal.systemtemps.sdPlugin/bin/plugin.js",
+    "build": "esbuild src/plugin.ts --bundle --platform=node --format=esm --target=node20 --banner:js=\"import{createRequire as __cr}from'module';const require=__cr(import.meta.url);\" --outfile=com.elemental.temps.sdPlugin/bin/plugin.js",
     "typecheck": "tsc",
-    "link": "streamdeck link com.rafal.systemtemps.sdPlugin",
+    "link": "streamdeck link com.elemental.temps.sdPlugin",
     "restart": "powershell -NoProfile -File restart.ps1",
     "deploy": "npm run build && npm run restart"
   },

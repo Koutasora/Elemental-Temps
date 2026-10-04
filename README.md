@@ -1,4 +1,4 @@
-# System Temps – Stream Deck plugin
+# Elemental Temps – Stream Deck plugin
 
 CPU and GPU temperature on Stream Deck keys, with a circular gauge, bar, history graph or a big number. Optional load, power draw and clock speed. Flashes red when a temperature gets critical.
 
@@ -14,7 +14,7 @@ Wtyczka Stream Deck pokazująca temperaturę CPU i GPU na klawiszach: wskaźnik 
 1. **EN:** In HWiNFO open *Settings* and enable **Shared Memory Support**.
    **PL:** W HWiNFO otwórz *Ustawienia* i włącz **Obsługę pamięci współdzielonej**.
 2. Install `com.rafal.systemtemps.streamDeckPlugin` (double-click / dwuklik).
-3. Drag **System Temps → Temperatura** onto a key and pick CPU or GPU.
+3. Drag **Elemental Temps → Temperatura** onto a key and pick CPU or GPU.
 
 > The free version of HWiNFO switches Shared Memory off after about 12 hours. When that happens the key shows **Enable HWiNFO Shared Memory** – just enable it again, the data comes back by itself.
 > Darmowa wersja HWiNFO wyłącza pamięć współdzieloną po ok. 12 godzinach. Klawisz pokaże wtedy **Enable HWiNFO Shared Memory** – wystarczy włączyć ją ponownie.

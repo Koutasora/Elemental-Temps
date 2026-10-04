@@ -43,8 +43,16 @@ while ($true) {
 			# numer karty GPU dla każdego czujnika ($null = to nie jest czujnik GPU)
 			$so = $v.ReadUInt32(20); $ss = $v.ReadUInt32(24); $sn = $v.ReadUInt32(28)
 			$gpuOf = @{}
+			$diskOf = @{}; $diskName = @{}; $diskTemp = @{}; $diskCount = 0
 			for ($i = 0; $i -lt $sn; $i++) {
-				if ((Str $v ($so + $i * $ss + 8) 128) -match '^GPU \[#(\d+)\]') { $gpuOf[[uint32]$i] = [int]$Matches[1] }
+				$sname = Str $v ($so + $i * $ss + 8) 128
+				if ($sname -match '^GPU \[#(\d+)\]') { $gpuOf[[uint32]$i] = [int]$Matches[1] }
+				elseif ($sname -match '^S\.M\.A\.R\.T\.: (.*)$') {
+					# dysk: litery z "[C:]" albo model sprzed " ("
+					$rest = $Matches[1]
+					if ($rest -match '\[([A-Za-z]:[^\]]*)\]') { $nm = $Matches[1] } else { $nm = ($rest -split ' \(')[0] }
+					$diskOf[[uint32]$i] = $diskCount; $diskName[$diskCount] = ($nm -replace '["\\]', ''); $diskCount++
+				}
 			}
 			$ro = $v.ReadUInt32(32); $rs = $v.ReadUInt32(36); $rn = $v.ReadUInt32(40)
 			$best = @{}   # klucz ("cpuTemp" albo "gpuTemp|0") => @(indeks wzorca, wartość)
@@ -56,6 +64,10 @@ while ($true) {
 				if ($t -ne 1 -and $t -ne 5 -and $t -ne 6 -and $t -ne 7) { continue }
 				$l = Str $v ($o + 12) 128
 				$gpuNum = $gpuOf[$v.ReadUInt32($o + 4)]
+				if ($t -eq 1 -and $l -eq 'Drive Temperature') {
+					$dn = $diskOf[$v.ReadUInt32($o + 4)]
+					if ($null -ne $dn -and -not $diskTemp.ContainsKey($dn)) { $diskTemp[$dn] = $v.ReadDouble($o + 284) }
+				}
 				foreach ($cat in $rules.Keys) {
 					$r = $rules[$cat]
 					if ($r[0] -ne $t) { continue }
@@ -86,9 +98,12 @@ while ($true) {
 				$g = MakeGroup $gv 'gpu'
 				if ($g) { $gpuJson += ('"' + $n + '":' + $g) }
 			}
+			$diskJson = @()
+			foreach ($dn in ($diskTemp.Keys | Sort-Object)) { $diskJson += ('"' + $dn + '":{"temp":' + (Num $diskTemp[$dn]) + ',"name":"' + $diskName[$dn] + '"}') }
 			$parts = @('"status":"ok"')
 			$cpu = MakeGroup $cpuVal 'cpu'; if ($cpu) { $parts += '"cpu":' + $cpu }
 			if ($gpuJson.Count) { $parts += '"gpu":{' + ($gpuJson -join ',') + '}' }
+			if ($diskJson.Count) { $parts += '"disk":{' + ($diskJson -join ',') + '}' }
 			$line = '{' + ($parts -join ',') + '}'
 		}
 		$v.Dispose(); $mmf.Dispose()

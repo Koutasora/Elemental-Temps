@@ -3,10 +3,25 @@ import { createInterface } from "node:readline";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { freemem, totalmem } from "node:os";
 
 const run = promisify(execFile);
 
-export type Reading = { temp: number; load?: number; power?: number; clock?: number; source: string };
+/** `temp` to główna wartość odczytu: °C dla CPU/GPU/dysku, % dla RAM. `name` – krótka nazwa (np. litera dysku). */
+export type Reading = { temp: number; load?: number; power?: number; clock?: number; name?: string; source: string };
+
+/** Dysk (SMART "Drive Temperature") z HWiNFO – w kolejności czujników S.M.A.R.T. */
+export async function readDisk(index = 0): Promise<Reading | null> {
+	ensureShm();
+	return Date.now() - shmLast.at < 8000 ? (shmLast.disks.get(index) ?? null) : null;
+}
+
+/** RAM: zajętość w % (`temp`) prosto z systemu, bez HWiNFO; `name` = "użyte / razem GB". */
+export function readRam(): Reading {
+	const total = totalmem();
+	const used = total - freemem();
+	return { temp: (used / total) * 100, name: `${(used / 1024 ** 3).toFixed(1)} / ${(total / 1024 ** 3).toFixed(0)} GB`, source: "os" };
+}
 
 /** GPU: HWiNFO pamięć współdzielona (każda karta osobno, po nazwie czujnika "GPU [#N]"). */
 export async function readGpu(index = 0): Promise<Reading | null> {
@@ -22,7 +37,7 @@ export async function readCpu(): Promise<Reading | null> {
 // --- HWiNFO shared memory: jeden długo działający proces PowerShell, jedna linia JSON na 2 s ---
 let shmProc: ChildProcess | undefined;
 export type ShmStatus = "ok" | "notrunning" | "disabled" | "unknown";
-let shmLast: { cpu: Reading | null; gpus: Map<number, Reading>; status: ShmStatus; at: number } = { cpu: null, gpus: new Map(), status: "unknown", at: 0 };
+let shmLast: { cpu: Reading | null; gpus: Map<number, Reading>; disks: Map<number, Reading>; status: ShmStatus; at: number } = { cpu: null, gpus: new Map(), disks: new Map(), status: "unknown", at: 0 };
 let shmStartedAt = 0;
 
 function ensureShm(): void {
@@ -36,9 +51,9 @@ function ensureShm(): void {
 	shmProc = proc;
 	createInterface({ input: proc.stdout! }).on("line", (line) => {
 		try {
-			const j = JSON.parse(line) as { status?: ShmStatus; cpu?: Omit<Reading, "source">; gpu?: Record<string, Omit<Reading, "source">> };
+			const j = JSON.parse(line) as { status?: ShmStatus; cpu?: Omit<Reading, "source">; gpu?: Record<string, Omit<Reading, "source">>; disk?: Record<string, Omit<Reading, "source">> };
 			const src = "HWiNFO: pamięć współdzielona";
-			shmLast = { at: Date.now(), status: j.status ?? "unknown", cpu: j.cpu ? { ...j.cpu, source: src } : null, gpus: new Map(Object.entries(j.gpu ?? {}).map(([n, r]) => [Number(n), { ...r, source: src }])) };
+			shmLast = { at: Date.now(), status: j.status ?? "unknown", cpu: j.cpu ? { ...j.cpu, source: src } : null, gpus: new Map(Object.entries(j.gpu ?? {}).map(([n, r]) => [Number(n), { ...r, source: src }])), disks: new Map(Object.entries(j.disk ?? {}).map(([n, r]) => [Number(n), { ...r, source: src }])) };
 		} catch {
 			/* ignoruj śmieci */
 		}

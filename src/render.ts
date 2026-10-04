@@ -4,6 +4,11 @@ export type KeyView = {
 	label: string;
 	temp: number | null;
 	unit: "C" | "F";
+	/** "temp" = °C/°F, "percent" = wartość w % (np. RAM) */
+	kind: "temp" | "percent";
+	/** zakres skali wskaźnika / paska */
+	min: number;
+	max: number;
 	warn: number;
 	crit: number;
 	chart: ChartType;
@@ -20,8 +25,6 @@ export type KeyView = {
 	message?: string;
 };
 
-const MIN = 20;
-const MAX = 100;
 const START = 135; // stopnie, 0 = prawo, rosną zgodnie z ruchem wskazówek
 const SWEEP = 270;
 const CX = 72;
@@ -121,8 +124,9 @@ export function renderKey(v: KeyView): string {
 	const has = v.temp !== null;
 	const t = v.temp ?? 0;
 	const c = !has ? "#6b7280" : (v.customColor ?? autoColor(t, v.warn, v.crit));
-	const frac = has ? Math.max(0, Math.min(1, (t - MIN) / (MAX - MIN))) : 0;
-	const shown = has ? Math.round(conv(t, v.unit)) : "–";
+	const frac = has ? Math.max(0, Math.min(1, (t - v.min) / (v.max - v.min))) : 0;
+	const unitText = v.kind === "percent" ? "%" : `°${v.unit}`;
+	const shown = has ? Math.round(v.kind === "percent" ? t : conv(t, v.unit)) : "–";
 	const hot = has && t >= v.crit && !v.message;
 	const digits = String(shown).length;
 
@@ -136,19 +140,19 @@ export function renderKey(v: KeyView): string {
 ${has ? `<path d="${arc(frac)}" fill="none" stroke="${c}" stroke-width="11" stroke-linecap="round" filter="url(#glow)"/>
 <circle cx="${kx}" cy="${ky}" r="4" fill="${theme.fg}"/>` : ""}
 <text x="72" y="${CY + size * 0.36}" text-anchor="middle" ${FONT} font-size="${size}" font-weight="700" fill="${theme.fg}">${shown}</text>
-<text x="72" y="${CY + size * 0.36 + 21}" text-anchor="middle" ${FONT} font-size="17" font-weight="700" fill="${c}">°${v.unit}</text>`;
+<text x="72" y="${CY + size * 0.36 + 21}" text-anchor="middle" ${FONT} font-size="17" font-weight="700" fill="${c}">${unitText}</text>`;
 	} else if (v.chart === "bar") {
 		const w = 104 * frac;
-		body = `<text x="72" y="82" text-anchor="middle" ${FONT} font-size="${digits >= 3 ? 46 : 54}" font-weight="700" fill="${theme.fg}">${shown}<tspan font-size="20" font-weight="600" dx="1" dy="-${digits >= 3 ? 24 : 30}" fill="${c}">°${v.unit}</tspan></text>
+		body = `<text x="72" y="82" text-anchor="middle" ${FONT} font-size="${digits >= 3 ? 46 : 54}" font-weight="700" fill="${theme.fg}">${shown}<tspan font-size="20" font-weight="600" dx="1" dy="-${digits >= 3 ? 24 : 30}" fill="${c}">${unitText}</tspan></text>
 <rect x="20" y="100" width="104" height="14" rx="7" fill="${theme.track}"/>
 ${has ? `<rect x="20" y="100" width="${Math.max(14, w).toFixed(1)}" height="14" rx="7" fill="${c}" filter="url(#glow)"/>` : ""}`;
 	} else if (v.chart === "line") {
 		labelY = 22;
-		body = `<text x="72" y="70" text-anchor="middle" ${FONT} font-size="${digits >= 3 ? 36 : 42}" font-weight="700" fill="${theme.fg}">${shown}<tspan font-size="16" font-weight="600" dx="1" dy="-${digits >= 3 ? 16 : 22}" fill="${c}">°${v.unit}</tspan></text>
+		body = `<text x="72" y="70" text-anchor="middle" ${FONT} font-size="${digits >= 3 ? 36 : 42}" font-weight="700" fill="${theme.fg}">${shown}<tspan font-size="16" font-weight="600" dx="1" dy="-${digits >= 3 ? 16 : 22}" fill="${c}">${unitText}</tspan></text>
 ${lineChart(v, c)}`;
 	} else {
 		body = `<text x="72" y="96" text-anchor="middle" ${FONT} font-size="${digits >= 3 ? 62 : 76}" font-weight="700" fill="${c}" filter="url(#glow)">${shown}</text>
-<text x="72" y="118" text-anchor="middle" ${FONT} font-size="18" font-weight="600" fill="${theme.label}">°${v.unit}</text>`;
+<text x="72" y="118" text-anchor="middle" ${FONT} font-size="18" font-weight="600" fill="${theme.label}">${unitText}</text>`;
 	}
 
 	if (v.message) body = messageBody(v.message);

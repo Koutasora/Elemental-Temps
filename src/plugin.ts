@@ -1,11 +1,14 @@
 import streamDeck, { action, KeyAction, KeyDownEvent, SingletonAction, WillAppearEvent, WillDisappearEvent, DidReceiveSettingsEvent } from "@elgato/streamdeck";
 import { spawn } from "node:child_process";
-import { readCpu, readGpu, Reading, shmStatus } from "./sensors";
+import { readCpu, readDisk, readGpu, readRam, Reading, shmStatus } from "./sensors";
 import { ChartType, renderKey, toDataUri } from "./render";
 
+type Sensor = "cpu" | "gpu" | "disk" | "ram";
+
 type Settings = {
-	sensor?: "cpu" | "gpu";
+	sensor?: Sensor;
 	gpuIndex?: number | string;
+	diskIndex?: number | string;
 	unit?: "C" | "F";
 	chart?: ChartType;
 	showLoad?: boolean;
@@ -25,10 +28,14 @@ type Settings = {
 
 type Entry = { action: KeyAction<Settings>; settings: Settings; alerting: boolean };
 
-const DEFAULTS = {
-	cpu: { warn: 70, crit: 85 },
-	gpu: { warn: 70, crit: 83 },
+/** progi domyślne i zakres skali wskaźnika dla każdego rodzaju czujnika */
+const DEFAULTS: Record<Sensor, { warn: number; crit: number; min: number; max: number; kind: "temp" | "percent" }> = {
+	cpu: { warn: 70, crit: 85, min: 20, max: 100, kind: "temp" },
+	gpu: { warn: 70, crit: 83, min: 20, max: 100, kind: "temp" },
+	disk: { warn: 50, crit: 65, min: 20, max: 80, kind: "temp" },
+	ram: { warn: 80, crit: 92, min: 0, max: 100, kind: "percent" },
 };
+const SENSORS: Sensor[] = ["cpu", "gpu", "disk", "ram"];
 const POLL_MS = 2000;
 const FLASH_MS = 600;
 const HISTORY_LEN = 30;
@@ -44,14 +51,20 @@ let lastSound = 0;
 
 const sensorOf = (s: Settings) => s.sensor ?? "cpu";
 const gpuIndexOf = (s: Settings) => Math.max(0, (Number(s.gpuIndex) || 1) - 1);
-/** klucz odczytu: "cpu" albo "gpu0", "gpu1"... */
-const keyOf = (s: Settings) => (sensorOf(s) === "gpu" ? `gpu${gpuIndexOf(s)}` : "cpu");
+const diskIndexOf = (s: Settings) => Math.max(0, (Number(s.diskIndex) || 1) - 1);
+/** klucz odczytu: "cpu", "ram", "gpu0", "gpu1", "disk0"... */
+const keyOf = (s: Settings) => {
+	const sensor = sensorOf(s);
+	return sensor === "gpu" ? `gpu${gpuIndexOf(s)}` : sensor === "disk" ? `disk${diskIndexOf(s)}` : sensor;
+};
 const thresholds = (s: Settings) => {
 	const def = DEFAULTS[sensorOf(s)];
 	return { warn: Number(s.warn) || def.warn, crit: Number(s.crit) || def.crit };
 };
 
 function subText(r: Reading, s: Settings): string | undefined {
+	if (sensorOf(s) === "ram") return r.name; // np. "18.2 / 32 GB"
+	if (sensorOf(s) === "disk") return undefined;
 	const parts: string[] = [];
 	if (s.showLoad !== false && r.load !== undefined) parts.push(`${Math.round(r.load)}%`);
 	if (s.showPower === true && r.power !== undefined) parts.push(`${Math.round(r.power)} W`);
@@ -60,14 +73,14 @@ function subText(r: Reading, s: Settings): string | undefined {
 }
 
 /** Komunikat dwujęzyczny (PL / EN), gdy nie ma danych. */
-function noDataText(sensor: "cpu" | "gpu"): string {
+function noDataText(sensor: Sensor): string {
 	switch (shmStatus()) {
 		case "notrunning":
 			return "Start\nHWiNFO";
 		case "disabled":
 			return "Enable\nHWiNFO\nShared Memory";
 		default:
-			return sensor === "cpu" ? "No data" : "No GPU";
+			return sensor === "gpu" ? "No GPU" : sensor === "disk" ? "No disk" : "No data";
 	}
 }
 
@@ -99,10 +112,15 @@ async function draw(id: string): Promise<void> {
 	const r = last.get(k) ?? null;
 	const { warn, crit } = thresholds(s);
 	const idx = gpuIndexOf(s);
+	const meta = DEFAULTS[sensor];
+	const label = sensor === "gpu" ? (idx > 0 ? `GPU ${idx + 1}` : "GPU") : sensor === "disk" ? `DISK ${(r?.name ?? String(diskIndexOf(s) + 1)).slice(0, 8)}` : sensor.toUpperCase();
 	const svg = renderKey({
-		label: sensor === "gpu" && idx > 0 ? `GPU ${idx + 1}` : sensor.toUpperCase(),
+		label,
 		temp: r?.temp ?? null,
 		unit: s.unit ?? "C",
+		kind: meta.kind,
+		min: meta.min,
+		max: meta.max,
 		showLabel: s.showLabel !== false,
 		bgColor: s.bgMode === "black" ? "#000000" : s.bgMode === "custom" ? (s.bgColor ?? "#1e3a8a") : null,
 		alertFlash: e.alerting && flashPhase,
@@ -121,7 +139,7 @@ async function tick(): Promise<void> {
 	const keys = new Set([...visible.values()].map((e) => keyOf(e.settings)));
 	await Promise.all(
 		[...keys].map(async (k) => {
-			const r = k === "cpu" ? await readCpu() : await readGpu(Number(k.slice(3)));
+			const r = k === "cpu" ? await readCpu() : k === "ram" ? readRam() : k.startsWith("disk") ? await readDisk(Number(k.slice(4))) : await readGpu(Number(k.slice(3)));
 			last.set(k, r);
 			if (r) history.set(k, [...(history.get(k) ?? []), r.temp].slice(-HISTORY_LEN));
 		}),
@@ -177,7 +195,7 @@ class Temperature extends SingletonAction<Settings> {
 		const s = ev.payload.settings;
 		streamDeck.logger.info(`keyDown: akcja=${s.keyAction ?? "refresh"} czujnik=${sensorOf(s)} wykres=${s.chart ?? "gauge"}`);
 		let next: Settings | undefined;
-		if (s.keyAction === "sensor") next = { ...s, sensor: sensorOf(s) === "cpu" ? "gpu" : "cpu" };
+		if (s.keyAction === "sensor") next = { ...s, sensor: SENSORS[(SENSORS.indexOf(sensorOf(s)) + 1) % SENSORS.length] };
 		else if (s.keyAction === "chart") next = { ...s, chart: CHARTS[(CHARTS.indexOf(s.chart ?? "gauge") + 1) % CHARTS.length] };
 		if (next) {
 			// stan lokalny aktualizujemy od razu – nie czekamy na didReceiveSettings

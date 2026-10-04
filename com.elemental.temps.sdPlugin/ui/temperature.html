@@ -8,23 +8,23 @@
 		SDPIComponents.i18n.locales = {
 			en: {
 				language: "Language", hwinfoNote: "In HWiNFO enable Shared Memory Support (Settings). The free version turns it off after ~12 h – just enable it again.",
-				sensor: "Sensor", gpuNum: "GPU #", name: "Name", showName: "Show name (CPU / GPU)",
+				sensor: "Sensor", sensorDisk: "Disk", gpuNum: "GPU #", diskNum: "Disk #", name: "Name", showName: "Show name (CPU / GPU)",
 				chart: "Chart", chartGauge: "Gauge", chartBar: "Bar", chartLine: "History graph", chartNumber: "Number only",
 				color: "Color", colorAuto: "Automatic (by thresholds)", colorCustom: "Custom", customColor: "Custom color",
 				background: "Background", bgDefault: "Default", bgBlack: "Black", bgCustom: "Custom", customBg: "Custom background",
 				load: "Load", showLoad: "Show load (%)", power: "Power", showPower: "Show power draw (W)", clock: "Clock", showClock: "Show clock speed (MHz/GHz)",
-				unit: "Unit", warning: "Warning (°C)", critical: "Critical (°C)",
+				unit: "Unit", warning: "Warning (°C / %)", critical: "Critical (°C / %)",
 				alarm: "Alarm", alarmFlash: "Flash red above the critical threshold", alarmSound: "Alarm sound", alarmSoundOpt: "Play a sound (at most every 30 s)",
 				onPress: "On key press", pressRefresh: "Refresh reading", pressSensor: "Switch CPU / GPU", pressChart: "Switch chart type",
 			},
 			pl: {
 				language: "Język", hwinfoNote: "W HWiNFO włącz Obsługę pamięci współdzielonej (Ustawienia). Darmowa wersja wyłącza ją po ok. 12 h – wystarczy włączyć ją ponownie.",
-				sensor: "Czujnik", gpuNum: "Karta GPU", name: "Nazwa", showName: "Pokaż nazwę (CPU / GPU)",
+				sensor: "Czujnik", sensorDisk: "Dysk", gpuNum: "Karta GPU", diskNum: "Dysk nr", name: "Nazwa", showName: "Pokaż nazwę (CPU / GPU)",
 				chart: "Wykres", chartGauge: "Kołowy wskaźnik", chartBar: "Pasek", chartLine: "Wykres historii", chartNumber: "Tylko liczba",
 				color: "Kolor", colorAuto: "Automatyczny (wg progów)", colorCustom: "Własny", customColor: "Własny kolor",
 				background: "Tło", bgDefault: "Domyślne", bgBlack: "Czarne", bgCustom: "Własne", customBg: "Własny kolor tła",
 				load: "Obciążenie", showLoad: "Pokaż obciążenie (%)", power: "Pobór mocy", showPower: "Pokaż pobór mocy (W)", clock: "Taktowanie", showClock: "Pokaż taktowanie (MHz/GHz)",
-				unit: "Jednostka", warning: "Ostrzeżenie (°C)", critical: "Krytyczna (°C)",
+				unit: "Jednostka", warning: "Ostrzeżenie (°C / %)", critical: "Krytyczna (°C / %)",
 				alarm: "Alarm", alarmFlash: "Miganie na czerwono po przekroczeniu progu krytycznego", alarmSound: "Dźwięk alarmu", alarmSoundOpt: "Odtwórz dźwięk (max co 30 s)",
 				onPress: "Po naciśnięciu", pressRefresh: "Odśwież odczyt", pressSensor: "Przełącz CPU / GPU", pressChart: "Zmień typ wykresu",
 			},
@@ -50,6 +50,8 @@
 		<sdpi-select setting="sensor" placeholder="CPU">
 			<option value="cpu">CPU</option>
 			<option value="gpu">GPU</option>
+			<option value="disk">__MSG_sensorDisk__</option>
+			<option value="ram">RAM</option>
 		</sdpi-select>
 	</sdpi-item>
 	<sdpi-item id="gpuItem" label="__MSG_gpuNum__">
@@ -58,6 +60,18 @@
 			<option value="2">2</option>
 			<option value="3">3</option>
 			<option value="4">4</option>
+		</sdpi-select>
+	</sdpi-item>
+	<sdpi-item id="diskItem" label="__MSG_diskNum__">
+		<sdpi-select setting="diskIndex" default="1">
+			<option value="1">1</option>
+			<option value="2">2</option>
+			<option value="3">3</option>
+			<option value="4">4</option>
+			<option value="5">5</option>
+			<option value="6">6</option>
+			<option value="7">7</option>
+			<option value="8">8</option>
 		</sdpi-select>
 	</sdpi-item>
 	<sdpi-item label="__MSG_name__">
@@ -90,16 +104,16 @@
 	<sdpi-item id="bgColorItem" label="__MSG_customBg__">
 		<sdpi-color setting="bgColor" default="#1e3a8a"></sdpi-color>
 	</sdpi-item>
-	<sdpi-item label="__MSG_load__">
+	<sdpi-item id="loadItem" label="__MSG_load__">
 		<sdpi-checkbox setting="showLoad" default="true" label="__MSG_showLoad__"></sdpi-checkbox>
 	</sdpi-item>
-	<sdpi-item label="__MSG_power__">
+	<sdpi-item id="powerItem" label="__MSG_power__">
 		<sdpi-checkbox setting="showPower" label="__MSG_showPower__"></sdpi-checkbox>
 	</sdpi-item>
-	<sdpi-item label="__MSG_clock__">
+	<sdpi-item id="clockItem" label="__MSG_clock__">
 		<sdpi-checkbox setting="showClock" label="__MSG_showClock__"></sdpi-checkbox>
 	</sdpi-item>
-	<sdpi-item label="__MSG_unit__">
+	<sdpi-item id="unitItem" label="__MSG_unit__">
 		<sdpi-select setting="unit" placeholder="°C">
 			<option value="C">°C</option>
 			<option value="F">°F</option>
@@ -140,7 +154,13 @@
 			const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? "" : "none"; };
 			const apply = (s) => {
 				s = s || {};
-				show("gpuItem", s.sensor === "gpu");
+				const sensor = s.sensor || "cpu";
+				show("gpuItem", sensor === "gpu");
+				show("diskItem", sensor === "disk");
+				show("loadItem", sensor === "cpu" || sensor === "gpu");
+				show("powerItem", sensor === "cpu" || sensor === "gpu");
+				show("clockItem", sensor === "cpu" || sensor === "gpu");
+				show("unitItem", sensor !== "ram");
 				show("colorItem", s.colorMode === "custom");
 				show("bgColorItem", s.bgMode === "custom");
 				show("soundItem", s.alertFlash !== false);

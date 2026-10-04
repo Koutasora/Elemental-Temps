@@ -1,0 +1,8 @@
+{
+	"Name": "Elemental Temps",
+	"Description": "Temperatura CPU i GPU na klawiszach Stream Deck: wskaźnik kołowy, pasek, wykres historii albo duża liczba.",
+	"com.elemental.temps.temperature": {
+		"Name": "Temperatura",
+		"Tooltip": "Pokazuje temperaturę CPU lub GPU."
+	}
+}

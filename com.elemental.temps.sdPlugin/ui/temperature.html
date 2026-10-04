@@ -3,20 +3,56 @@
 <head lang="en">
 	<meta charset="utf-8" />
 	<script src="sdpi-components.js"></script>
+	<script>
+		// --- translations (en / pl). Messages are referenced as __MSG_key__ in the markup below ---
+		SDPIComponents.i18n.locales = {
+			en: {
+				language: "Language", hwinfoNote: "In HWiNFO enable Shared Memory Support (Settings). The free version turns it off after ~12 h – just enable it again.",
+				sensor: "Sensor", gpuNum: "GPU #", name: "Name", showName: "Show name (CPU / GPU)",
+				chart: "Chart", chartGauge: "Gauge", chartBar: "Bar", chartLine: "History graph", chartNumber: "Number only",
+				color: "Color", colorAuto: "Automatic (by thresholds)", colorCustom: "Custom", customColor: "Custom color",
+				background: "Background", bgDefault: "Default", bgBlack: "Black", bgCustom: "Custom", customBg: "Custom background",
+				load: "Load", showLoad: "Show load (%)", power: "Power", showPower: "Show power draw (W)", clock: "Clock", showClock: "Show clock speed (MHz/GHz)",
+				unit: "Unit", warning: "Warning (°C)", critical: "Critical (°C)",
+				alarm: "Alarm", alarmFlash: "Flash red above the critical threshold", alarmSound: "Alarm sound", alarmSoundOpt: "Play a sound (at most every 30 s)",
+				onPress: "On key press", pressRefresh: "Refresh reading", pressSensor: "Switch CPU / GPU", pressChart: "Switch chart type",
+			},
+			pl: {
+				language: "Język", hwinfoNote: "W HWiNFO włącz Obsługę pamięci współdzielonej (Ustawienia). Darmowa wersja wyłącza ją po ok. 12 h – wystarczy włączyć ją ponownie.",
+				sensor: "Czujnik", gpuNum: "Karta GPU", name: "Nazwa", showName: "Pokaż nazwę (CPU / GPU)",
+				chart: "Wykres", chartGauge: "Kołowy wskaźnik", chartBar: "Pasek", chartLine: "Wykres historii", chartNumber: "Tylko liczba",
+				color: "Kolor", colorAuto: "Automatyczny (wg progów)", colorCustom: "Własny", customColor: "Własny kolor",
+				background: "Tło", bgDefault: "Domyślne", bgBlack: "Czarne", bgCustom: "Własne", customBg: "Własny kolor tła",
+				load: "Obciążenie", showLoad: "Pokaż obciążenie (%)", power: "Pobór mocy", showPower: "Pokaż pobór mocy (W)", clock: "Taktowanie", showClock: "Pokaż taktowanie (MHz/GHz)",
+				unit: "Jednostka", warning: "Ostrzeżenie (°C)", critical: "Krytyczna (°C)",
+				alarm: "Alarm", alarmFlash: "Miganie na czerwono po przekroczeniu progu krytycznego", alarmSound: "Dźwięk alarmu", alarmSoundOpt: "Odtwórz dźwięk (max co 30 s)",
+				onPress: "Po naciśnięciu", pressRefresh: "Odśwież odczyt", pressSensor: "Przełącz CPU / GPU", pressChart: "Zmień typ wykresu",
+			},
+		};
+		// language: own choice (saved in this inspector's storage) wins; "auto" follows Stream Deck / browser language; default English
+		var langChoice = "auto";
+		try { langChoice = localStorage.getItem("elementalLang") || "auto"; } catch (e) {}
+		SDPIComponents.i18n.language = langChoice === "auto" ? (SDPIComponents.i18n.locales[SDPIComponents.i18n.language] ? SDPIComponents.i18n.language : "en") : langChoice;
+	</script>
 </head>
 <body>
-	<sdpi-item label="HWiNFO">
-		<div style="font-size:11px;line-height:1.4;opacity:.85">
-			In HWiNFO enable <i>Shared Memory Support</i> (Settings). The free version turns it off after ~12 h &ndash; just enable it again.
-		</div>
+	<sdpi-item label="__MSG_language__">
+		<select id="langSel" style="width:100%;background:#2d2d2d;color:#d8d8d8;border:1px solid #555;border-radius:4px;padding:4px">
+			<option value="auto">Auto</option>
+			<option value="en">English</option>
+			<option value="pl">Polski</option>
+		</select>
 	</sdpi-item>
-	<sdpi-item label="Sensor">
+	<sdpi-item label="HWiNFO">
+		<div style="font-size:11px;line-height:1.4;opacity:.85"><sdpi-i18n key="hwinfoNote"></sdpi-i18n></div>
+	</sdpi-item>
+	<sdpi-item label="__MSG_sensor__">
 		<sdpi-select setting="sensor" placeholder="CPU">
 			<option value="cpu">CPU</option>
 			<option value="gpu">GPU</option>
 		</sdpi-select>
 	</sdpi-item>
-	<sdpi-item id="gpuItem" label="GPU #">
+	<sdpi-item id="gpuItem" label="__MSG_gpuNum__">
 		<sdpi-select setting="gpuIndex" default="1">
 			<option value="1">1</option>
 			<option value="2">2</option>
@@ -24,71 +60,81 @@
 			<option value="4">4</option>
 		</sdpi-select>
 	</sdpi-item>
-	<sdpi-item label="Name">
-		<sdpi-checkbox setting="showLabel" default="true" label="Show name (CPU / GPU)"></sdpi-checkbox>
+	<sdpi-item label="__MSG_name__">
+		<sdpi-checkbox setting="showLabel" default="true" label="__MSG_showName__"></sdpi-checkbox>
 	</sdpi-item>
-	<sdpi-item label="Chart">
+	<sdpi-item label="__MSG_chart__">
 		<sdpi-select setting="chart" default="gauge">
-			<option value="gauge">Gauge</option>
-			<option value="bar">Bar</option>
-			<option value="line">History graph</option>
-			<option value="number">Number only</option>
+			<option value="gauge">__MSG_chartGauge__</option>
+			<option value="bar">__MSG_chartBar__</option>
+			<option value="line">__MSG_chartLine__</option>
+			<option value="number">__MSG_chartNumber__</option>
 		</sdpi-select>
 	</sdpi-item>
-	<sdpi-item label="Color">
+	<sdpi-item label="__MSG_color__">
 		<sdpi-select setting="colorMode" default="auto">
-			<option value="auto">Automatic (by thresholds)</option>
-			<option value="custom">Custom</option>
+			<option value="auto">__MSG_colorAuto__</option>
+			<option value="custom">__MSG_colorCustom__</option>
 		</sdpi-select>
 	</sdpi-item>
-	<sdpi-item id="colorItem" label="Custom color">
+	<sdpi-item id="colorItem" label="__MSG_customColor__">
 		<sdpi-color setting="color" default="#38bdf8"></sdpi-color>
 	</sdpi-item>
-	<sdpi-item label="Background">
+	<sdpi-item label="__MSG_background__">
 		<sdpi-select setting="bgMode" default="default">
-			<option value="default">Default</option>
-			<option value="black">Black</option>
-			<option value="custom">Custom</option>
+			<option value="default">__MSG_bgDefault__</option>
+			<option value="black">__MSG_bgBlack__</option>
+			<option value="custom">__MSG_bgCustom__</option>
 		</sdpi-select>
 	</sdpi-item>
-	<sdpi-item id="bgColorItem" label="Custom background">
+	<sdpi-item id="bgColorItem" label="__MSG_customBg__">
 		<sdpi-color setting="bgColor" default="#1e3a8a"></sdpi-color>
 	</sdpi-item>
-	<sdpi-item label="Load">
-		<sdpi-checkbox setting="showLoad" default="true" label="Show load (%)"></sdpi-checkbox>
+	<sdpi-item label="__MSG_load__">
+		<sdpi-checkbox setting="showLoad" default="true" label="__MSG_showLoad__"></sdpi-checkbox>
 	</sdpi-item>
-	<sdpi-item label="Power">
-		<sdpi-checkbox setting="showPower" label="Show power draw (W)"></sdpi-checkbox>
+	<sdpi-item label="__MSG_power__">
+		<sdpi-checkbox setting="showPower" label="__MSG_showPower__"></sdpi-checkbox>
 	</sdpi-item>
-	<sdpi-item label="Clock">
-		<sdpi-checkbox setting="showClock" label="Show clock speed (MHz/GHz)"></sdpi-checkbox>
+	<sdpi-item label="__MSG_clock__">
+		<sdpi-checkbox setting="showClock" label="__MSG_showClock__"></sdpi-checkbox>
 	</sdpi-item>
-	<sdpi-item label="Unit">
+	<sdpi-item label="__MSG_unit__">
 		<sdpi-select setting="unit" placeholder="°C">
 			<option value="C">°C</option>
 			<option value="F">°F</option>
 		</sdpi-select>
 	</sdpi-item>
-	<sdpi-item label="Warning (°C)">
+	<sdpi-item label="__MSG_warning__">
 		<sdpi-textfield setting="warn" placeholder="70" pattern="^[0-9]{2,3}$"></sdpi-textfield>
 	</sdpi-item>
-	<sdpi-item label="Critical (°C)">
+	<sdpi-item label="__MSG_critical__">
 		<sdpi-textfield setting="crit" placeholder="85" pattern="^[0-9]{2,3}$"></sdpi-textfield>
 	</sdpi-item>
-	<sdpi-item label="Alarm">
-		<sdpi-checkbox setting="alertFlash" default="true" label="Flash red above the critical threshold"></sdpi-checkbox>
+	<sdpi-item label="__MSG_alarm__">
+		<sdpi-checkbox setting="alertFlash" default="true" label="__MSG_alarmFlash__"></sdpi-checkbox>
 	</sdpi-item>
-	<sdpi-item id="soundItem" label="Alarm sound">
-		<sdpi-checkbox setting="alertSound" label="Play a sound (at most every 30 s)"></sdpi-checkbox>
+	<sdpi-item id="soundItem" label="__MSG_alarmSound__">
+		<sdpi-checkbox setting="alertSound" label="__MSG_alarmSoundOpt__"></sdpi-checkbox>
 	</sdpi-item>
-	<sdpi-item label="On key press">
+	<sdpi-item label="__MSG_onPress__">
 		<sdpi-select setting="keyAction" default="refresh">
-			<option value="refresh">Refresh reading</option>
-			<option value="sensor">Switch CPU / GPU</option>
-			<option value="chart">Switch chart type</option>
+			<option value="refresh">__MSG_pressRefresh__</option>
+			<option value="sensor">__MSG_pressSensor__</option>
+			<option value="chart">__MSG_pressChart__</option>
 		</sdpi-select>
 	</sdpi-item>
 	<script>
+		// language picker: remember the choice and reload so every label is rebuilt in the new language
+		try {
+			var sel = document.getElementById("langSel");
+			sel.value = langChoice;
+			sel.addEventListener("change", function () {
+				try { localStorage.setItem("elementalLang", sel.value); } catch (e) {}
+				location.reload();
+			});
+		} catch (err) { console.error(err); }
+
 		// show fields only when they make sense (if this fails, all fields simply stay visible)
 		try {
 			const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? "" : "none"; };

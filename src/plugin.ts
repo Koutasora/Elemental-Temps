@@ -63,11 +63,11 @@ function subText(r: Reading, s: Settings): string | undefined {
 function noDataText(sensor: "cpu" | "gpu"): string {
 	switch (shmStatus()) {
 		case "notrunning":
-			return "Uruchom / Start\nHWiNFO";
+			return "Start\nHWiNFO";
 		case "disabled":
-			return "Włącz / Enable\nHWiNFO Shared Memory";
+			return "Enable\nHWiNFO\nShared Memory";
 		default:
-			return sensor === "cpu" ? "brak danych / no data" : "brak GPU / no GPU";
+			return sensor === "cpu" ? "No data" : "No GPU";
 	}
 }
 
@@ -111,7 +111,8 @@ async function draw(id: string): Promise<void> {
 		history: history.get(k) ?? [],
 		warn,
 		crit,
-		sub: r ? subText(r, s) : noDataText(sensor),
+		sub: r ? subText(r, s) : undefined,
+		message: r ? undefined : noDataText(sensor),
 	});
 	await e.action.setImage(toDataUri(svg));
 }

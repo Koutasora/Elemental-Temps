@@ -16,6 +16,8 @@ export type KeyView = {
 	/** faza migania przy temperaturze krytycznej (czerwone tło) */
 	alertFlash: boolean;
 	sub?: string;
+	/** komunikat na cały klawisz (brak danych) – zastępuje wykres */
+	message?: string;
 };
 
 const MIN = 20;
@@ -104,6 +106,16 @@ function subText(text: string): string {
 	return lines.map((l, i) => `<text x="72" y="${129 + i * (s + 1)}" text-anchor="middle" ${FONT} font-size="${s}" font-weight="600" fill="${theme.warn}">${l}</text>`).join("");
 }
 
+/** Wyśrodkowany, duży tekst – cały klawisz zamiast wykresu. */
+function messageBody(text: string): string {
+	const lines = text.split("\n");
+	const maxLen = Math.max(...lines.map((l) => l.length));
+	const s = Math.min(24, Math.floor(128 / (maxLen * 0.56)));
+	const step = s * 1.25;
+	const y0 = 84 - ((lines.length - 1) * step) / 2 + s * 0.35;
+	return lines.map((l, i) => `<text x="72" y="${(y0 + i * step).toFixed(1)}" text-anchor="middle" ${FONT} font-size="${s}" font-weight="700" fill="${i === 0 ? theme.warn : theme.fg}">${l}</text>`).join("");
+}
+
 export function renderKey(v: KeyView): string {
 	theme = themeFor(v.alertFlash ? "#991b1b" : v.bgColor);
 	const has = v.temp !== null;
@@ -111,7 +123,7 @@ export function renderKey(v: KeyView): string {
 	const c = !has ? "#6b7280" : (v.customColor ?? autoColor(t, v.warn, v.crit));
 	const frac = has ? Math.max(0, Math.min(1, (t - MIN) / (MAX - MIN))) : 0;
 	const shown = has ? Math.round(conv(t, v.unit)) : "–";
-	const hot = has && t >= v.crit;
+	const hot = has && t >= v.crit && !v.message;
 	const digits = String(shown).length;
 
 	// układ zależny od typu wykresu
@@ -139,7 +151,8 @@ ${lineChart(v, c)}`;
 <text x="72" y="118" text-anchor="middle" ${FONT} font-size="18" font-weight="600" fill="${theme.label}">°${v.unit}</text>`;
 	}
 
-	const showSub = v.sub;
+	if (v.message) body = messageBody(v.message);
+	const showSub = v.message ? undefined : v.sub;
 	const shift = v.showLabel ? 0 : -8; // bez nazwy cała treść idzie wyżej
 	return `<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">
 <defs>

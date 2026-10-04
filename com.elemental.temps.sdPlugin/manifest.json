@@ -28,14 +28,14 @@
       "UUID": "com.elemental.temps.cpu",
       "Name": "CPU Temperature",
       "Tooltip": "Shows CPU temperature, load, power and clock speed.",
-      "Icon": "imgs/action-icon",
+      "Icon": "imgs/action-cpu",
       "PropertyInspectorPath": "ui/cpu.html",
       "Controllers": [
         "Keypad"
       ],
       "States": [
         {
-          "Image": "imgs/key-default",
+          "Image": "imgs/key-cpu",
           "ShowTitle": false
         }
       ]
@@ -44,14 +44,14 @@
       "UUID": "com.elemental.temps.gpu",
       "Name": "GPU Temperature",
       "Tooltip": "Shows graphics card temperature, load, power and clock speed.",
-      "Icon": "imgs/action-icon",
+      "Icon": "imgs/action-gpu",
       "PropertyInspectorPath": "ui/gpu.html",
       "Controllers": [
         "Keypad"
       ],
       "States": [
         {
-          "Image": "imgs/key-default",
+          "Image": "imgs/key-gpu",
           "ShowTitle": false
         }
       ]
@@ -60,14 +60,14 @@
       "UUID": "com.elemental.temps.disk",
       "Name": "Disk Temperature",
       "Tooltip": "Shows the temperature of a chosen disk.",
-      "Icon": "imgs/action-icon",
+      "Icon": "imgs/action-disk",
       "PropertyInspectorPath": "ui/disk.html",
       "Controllers": [
         "Keypad"
       ],
       "States": [
         {
-          "Image": "imgs/key-default",
+          "Image": "imgs/key-disk",
           "ShowTitle": false
         }
       ]
@@ -76,14 +76,14 @@
       "UUID": "com.elemental.temps.ram",
       "Name": "RAM Usage",
       "Tooltip": "Shows how much memory is in use.",
-      "Icon": "imgs/action-icon",
+      "Icon": "imgs/action-ram",
       "PropertyInspectorPath": "ui/ram.html",
       "Controllers": [
         "Keypad"
       ],
       "States": [
         {
-          "Image": "imgs/key-default",
+          "Image": "imgs/key-ram",
           "ShowTitle": false
         }
       ]

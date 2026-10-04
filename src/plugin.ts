@@ -174,14 +174,17 @@ class Temperature extends SingletonAction<Settings> {
 
 	override async onKeyDown(ev: KeyDownEvent<Settings>): Promise<void> {
 		const s = ev.payload.settings;
-		if (s.keyAction === "sensor") {
-			await ev.action.setSettings({ ...s, sensor: sensorOf(s) === "cpu" ? "gpu" : "cpu" });
-		} else if (s.keyAction === "chart") {
-			const next = CHARTS[(CHARTS.indexOf(s.chart ?? "gauge") + 1) % CHARTS.length];
-			await ev.action.setSettings({ ...s, chart: next });
-		} else {
-			await tick(); // domyślnie: odśwież teraz
+		streamDeck.logger.info(`keyDown: akcja=${s.keyAction ?? "refresh"} czujnik=${sensorOf(s)} wykres=${s.chart ?? "gauge"}`);
+		let next: Settings | undefined;
+		if (s.keyAction === "sensor") next = { ...s, sensor: sensorOf(s) === "cpu" ? "gpu" : "cpu" };
+		else if (s.keyAction === "chart") next = { ...s, chart: CHARTS[(CHARTS.indexOf(s.chart ?? "gauge") + 1) % CHARTS.length] };
+		if (next) {
+			// stan lokalny aktualizujemy od razu – nie czekamy na didReceiveSettings
+			const e = visible.get(ev.action.id);
+			if (e) e.settings = next;
+			await ev.action.setSettings(next);
 		}
+		await tick(); // zawsze też odśwież odczyt
 	}
 }
 

@@ -12,6 +12,7 @@ type Settings = {
 	diskIndex?: number | string;
 	sensorId?: string;
 	sensorName?: string;
+	scaleMax?: number | string;
 	unit?: "C" | "F";
 	chart?: ChartType;
 	showLoad?: boolean;
@@ -32,7 +33,7 @@ type Settings = {
 type Entry = { action: KeyAction<Settings>; settings: Settings; alerting: boolean };
 
 /** progi domyślne i zakres skali wskaźnika dla każdego rodzaju czujnika */
-const DEFAULTS: Record<Sensor, { warn: number; crit: number; min: number; max: number; kind: "temp" | "percent" }> = {
+const DEFAULTS: Record<Sensor, { warn: number; crit: number; min: number; max: number; kind: "temp" | "percent" | "plain" }> = {
 	cpu: { warn: 70, crit: 85, min: 20, max: 100, kind: "temp" },
 	gpu: { warn: 70, crit: 83, min: 20, max: 100, kind: "temp" },
 	disk: { warn: 50, crit: 65, min: 20, max: 80, kind: "temp" },
@@ -60,10 +61,19 @@ const keyOf = (s: Settings) => {
 	const sensor = sensorOf(s);
 	return sensor === "gpu" ? `gpu${gpuIndexOf(s)}` : sensor === "disk" ? `disk${diskIndexOf(s)}` : sensor === "sensor" ? `sensor:${s.sensorId ?? ""}` : sensor;
 };
-const thresholds = (s: Settings) => {
+/** Custom Sensor może pokazywać też obroty, napięcia itd. – takie odczyty (jednostka inna niż °C) nie mają domyślnych progów, więc bez ręcznie ustawionych nie alarmują. */
+const isPlain = (s: Settings, r: Reading | null) => sensorOf(s) === "sensor" && !!r?.unit && r.unit !== "C";
+const thresholds = (s: Settings, r: Reading | null = null) => {
 	const def = DEFAULTS[sensorOf(s)];
-	return { warn: Number(s.warn) || def.warn, crit: Number(s.crit) || def.crit };
+	const none = isPlain(s, r);
+	return { warn: Number(s.warn) || (none ? Infinity : def.warn), crit: Number(s.crit) || (none ? Infinity : def.crit) };
 };
+/** Domyślny koniec skali dla odczytów bez temperatury. */
+const SCALE_MAX: Record<string, number> = { RPM: 3000, "%": 100, W: 150, V: 15, A: 20, MHz: 5000, GHz: 6 };
+function plainScale(s: Settings, r: Reading): { min: number; max: number } {
+	const max = Number(s.scaleMax) || SCALE_MAX[r.unit ?? ""] || 100;
+	return { min: Math.min(0, r.temp), max: Math.max(max, r.temp * 1.1) }; // skala rośnie, gdy wartość ją przekroczy
+}
 
 function subText(r: Reading, s: Settings): string | undefined {
 	if (sensorOf(s) === "ram") return r.name; // np. "18.2 / 32 GB"
@@ -96,7 +106,7 @@ function beep(): void {
 /** Aktualizuje stan alarmu (z histerezą 2 °C) i zwraca, czy klawisz alarmuje. */
 function updateAlert(e: Entry): boolean {
 	const r = last.get(keyOf(e.settings)) ?? null;
-	const { crit } = thresholds(e.settings);
+	const { crit } = thresholds(e.settings, r);
 	const enabled = e.settings.alertFlash !== false;
 	const was = e.alerting;
 	if (!r || !enabled) e.alerting = false;
@@ -113,15 +123,17 @@ async function draw(id: string): Promise<void> {
 	const sensor = sensorOf(s);
 	const k = keyOf(s);
 	const r = last.get(k) ?? null;
-	const { warn, crit } = thresholds(s);
+	const { warn, crit } = thresholds(s, r);
 	const idx = gpuIndexOf(s);
-	const meta = DEFAULTS[sensor];
+	const plain = r && isPlain(s, r) ? plainScale(s, r) : null;
+	const meta = plain ? { ...DEFAULTS[sensor], ...plain, kind: "plain" as const } : DEFAULTS[sensor];
 	const label = sensor === "gpu" ? (idx > 0 ? `GPU ${idx + 1}` : "GPU") : sensor === "disk" ? `DISK ${(r?.name ?? String(diskIndexOf(s) + 1)).slice(0, 8)}` : sensor === "sensor" ? (s.sensorName?.trim() || r?.name || "SENSOR").slice(0, 8).toUpperCase() : sensor.toUpperCase();
 	const svg = renderKey({
 		label,
 		temp: r?.temp ?? null,
 		unit: s.unit ?? "C",
 		kind: meta.kind,
+		suffix: plain ? r?.unit : undefined,
 		min: meta.min,
 		max: meta.max,
 		showLabel: s.showLabel !== false,

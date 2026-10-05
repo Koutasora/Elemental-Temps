@@ -9,7 +9,7 @@
 		SDPIComponents.i18n.locales = {
 			en: {
 				language: "Language", hwinfoNote: "In HWiNFO enable Shared Memory Support (Settings). The free version turns it off after ~12 h – just enable it again.",
-				gpuCard: "Graphics card", diskDrive: "Disk", sensorPick: "Sensor", sensorLabel: "Key label", sensorLabelHint: "e.g. WATER", name: "Name", showName: "Show sensor name",
+				gpuCard: "Graphics card", diskDrive: "Disk", sensorPick: "Sensor", sensorLabel: "Key label", sensorLabelHint: "e.g. WATER", scaleMax: "Scale max", scaleMaxHint: "auto (e.g. 3000 for RPM)", sensorNote: "Pick any HWiNFO reading: temperatures, fans, voltages, power, load… Thresholds and alarm stay off for non-temperature readings until you set them.", name: "Name", showName: "Show sensor name",
 				chart: "Chart", chartGauge: "Gauge", chartBar: "Bar", chartLine: "History graph", chartNumber: "Number only",
 				color: "Color", colorAuto: "Automatic (by thresholds)", colorCustom: "Custom", customColor: "Custom color",
 				background: "Background", bgDefault: "Default", bgBlack: "Black", bgCustom: "Custom", customBg: "Custom background",
@@ -20,7 +20,7 @@
 			},
 			pl: {
 				language: "Język", hwinfoNote: "W HWiNFO włącz Obsługę pamięci współdzielonej (Ustawienia). Darmowa wersja wyłącza ją po ok. 12 h – wystarczy włączyć ją ponownie.",
-				gpuCard: "Karta graficzna", diskDrive: "Dysk", sensorPick: "Czujnik", sensorLabel: "Etykieta na klawiszu", sensorLabelHint: "np. WODA", name: "Nazwa", showName: "Pokaż nazwę czujnika",
+				gpuCard: "Karta graficzna", diskDrive: "Dysk", sensorPick: "Czujnik", sensorLabel: "Etykieta na klawiszu", sensorLabelHint: "np. WODA", scaleMax: "Koniec skali", scaleMaxHint: "auto (np. 3000 dla RPM)", sensorNote: "Wybierz dowolny odczyt z HWiNFO: temperatury, wentylatory, napięcia, moc, obciążenie… Progi i alarm są wyłączone dla odczytów innych niż temperatura, dopóki ich nie ustawisz.", name: "Nazwa", showName: "Pokaż nazwę czujnika",
 				chart: "Wykres", chartGauge: "Kołowy wskaźnik", chartBar: "Pasek", chartLine: "Wykres historii", chartNumber: "Tylko liczba",
 				color: "Kolor", colorAuto: "Automatyczny (wg progów)", colorCustom: "Własny", customColor: "Własny kolor",
 				background: "Tło", bgDefault: "Domyślne", bgBlack: "Czarne", bgCustom: "Własne", customBg: "Własny kolor tła",
@@ -97,10 +97,10 @@
 		</sdpi-select>
 	</sdpi-item>
 	<sdpi-item label="__MSG_warning__">
-		<sdpi-textfield setting="warn" placeholder="70" pattern="^[0-9]{2,3}$"></sdpi-textfield>
+		<sdpi-textfield setting="warn" placeholder="70" pattern="^[0-9]{1,5}$"></sdpi-textfield>
 	</sdpi-item>
 	<sdpi-item label="__MSG_critical__">
-		<sdpi-textfield setting="crit" placeholder="83" pattern="^[0-9]{2,3}$"></sdpi-textfield>
+		<sdpi-textfield setting="crit" placeholder="83" pattern="^[0-9]{1,5}$"></sdpi-textfield>
 	</sdpi-item>
 	<sdpi-item label="__MSG_alarm__">
 		<sdpi-checkbox setting="alertFlash" default="true" label="__MSG_alarmFlash__"></sdpi-checkbox>

@@ -14,7 +14,7 @@ const SENSORS = {
 	gpu: { unit: "°C", warn: 70, crit: 83 },
 	disk: { unit: "°C", warn: 50, crit: 65 },
 	ram: { unit: "%", warn: 80, crit: 92 },
-	sensor: { unit: "°C", warn: 40, crit: 50 },
+	sensor: { unit: "", warn: 40, crit: 50 },
 };
 
 const block = /[ \t]*<sdpi-item\b[^>]*\bdata-for="([^"]*)"[^>]*>[\s\S]*?<\/sdpi-item>\n?/g;
@@ -23,7 +23,7 @@ for (const [sensor, meta] of Object.entries(SENSORS)) {
 	let html = template.replace(block, (match, targets) => (targets.split(/\s+/).includes(sensor) ? match : ""));
 	html = html
 		.replace(/ data-for="[^"]*"/g, "")
-		.replaceAll("@UNIT@", meta.unit)
+		.replaceAll(" (@UNIT@)", meta.unit ? ` (${meta.unit})` : "")
 		.replaceAll("@WARN@", String(meta.warn))
 		.replaceAll("@CRIT@", String(meta.crit));
 	fs.writeFileSync(path.join(outDir, `${sensor}.html`), html);

@@ -9,23 +9,23 @@
 		SDPIComponents.i18n.locales = {
 			en: {
 				language: "Language", hwinfoNote: "In HWiNFO enable Shared Memory Support (Settings). The free version turns it off after ~12 h – just enable it again.",
-				gpuCard: "Graphics card", diskDrive: "Disk", sensorPick: "Sensor", sensorLabel: "Key label", sensorLabelHint: "e.g. WATER", name: "Name", showName: "Show sensor name",
+				gpuCard: "Graphics card", diskDrive: "Disk", sensorPick: "Sensor", sensorLabel: "Key label", sensorLabelHint: "e.g. WATER", scaleMax: "Scale max", scaleMaxHint: "auto (e.g. 3000 for RPM)", sensorNote: "Pick any HWiNFO reading: temperatures, fans, voltages, power, load… Thresholds and alarm stay off for non-temperature readings until you set them.", name: "Name", showName: "Show sensor name",
 				chart: "Chart", chartGauge: "Gauge", chartBar: "Bar", chartLine: "History graph", chartNumber: "Number only",
 				color: "Color", colorAuto: "Automatic (by thresholds)", colorCustom: "Custom", customColor: "Custom color",
 				background: "Background", bgDefault: "Default", bgBlack: "Black", bgCustom: "Custom", customBg: "Custom background",
 				load: "Load", showLoad: "Show load (%)", power: "Power", showPower: "Show power draw (W)", clock: "Clock", showClock: "Show clock speed (MHz/GHz)",
-				unit: "Unit", warning: "Warning (°C)", critical: "Critical (°C)",
+				unit: "Unit", warning: "Warning", critical: "Critical",
 				alarm: "Alarm", alarmFlash: "Flash red above the critical threshold", alarmSound: "Alarm sound", alarmSoundOpt: "Play a sound (at most every 30 s)",
 				onPress: "On key press", pressRefresh: "Refresh reading", pressChart: "Switch chart type",
 			},
 			pl: {
 				language: "Język", hwinfoNote: "W HWiNFO włącz Obsługę pamięci współdzielonej (Ustawienia). Darmowa wersja wyłącza ją po ok. 12 h – wystarczy włączyć ją ponownie.",
-				gpuCard: "Karta graficzna", diskDrive: "Dysk", sensorPick: "Czujnik", sensorLabel: "Etykieta na klawiszu", sensorLabelHint: "np. WODA", name: "Nazwa", showName: "Pokaż nazwę czujnika",
+				gpuCard: "Karta graficzna", diskDrive: "Dysk", sensorPick: "Czujnik", sensorLabel: "Etykieta na klawiszu", sensorLabelHint: "np. WODA", scaleMax: "Koniec skali", scaleMaxHint: "auto (np. 3000 dla RPM)", sensorNote: "Wybierz dowolny odczyt z HWiNFO: temperatury, wentylatory, napięcia, moc, obciążenie… Progi i alarm są wyłączone dla odczytów innych niż temperatura, dopóki ich nie ustawisz.", name: "Nazwa", showName: "Pokaż nazwę czujnika",
 				chart: "Wykres", chartGauge: "Kołowy wskaźnik", chartBar: "Pasek", chartLine: "Wykres historii", chartNumber: "Tylko liczba",
 				color: "Kolor", colorAuto: "Automatyczny (wg progów)", colorCustom: "Własny", customColor: "Własny kolor",
 				background: "Tło", bgDefault: "Domyślne", bgBlack: "Czarne", bgCustom: "Własne", customBg: "Własny kolor tła",
 				load: "Obciążenie", showLoad: "Pokaż obciążenie (%)", power: "Pobór mocy", showPower: "Pokaż pobór mocy (W)", clock: "Taktowanie", showClock: "Pokaż taktowanie (MHz/GHz)",
-				unit: "Jednostka", warning: "Ostrzeżenie (°C)", critical: "Krytyczna (°C)",
+				unit: "Jednostka", warning: "Ostrzeżenie", critical: "Krytyczna",
 				alarm: "Alarm", alarmFlash: "Miganie na czerwono po przekroczeniu progu krytycznego", alarmSound: "Dźwięk alarmu", alarmSoundOpt: "Odtwórz dźwięk (max co 30 s)",
 				onPress: "Po naciśnięciu", pressRefresh: "Odśwież odczyt", pressChart: "Zmień typ wykresu",
 			},
@@ -50,6 +50,12 @@
 	</sdpi-item>
 	<sdpi-item label="__MSG_sensorPick__">
 		<sdpi-select setting="sensorId" datasource="sensors" show-refresh></sdpi-select>
+	</sdpi-item>
+	<sdpi-item label="HWiNFO">
+		<div style="font-size:11px;line-height:1.4;opacity:.85"><sdpi-i18n key="sensorNote"></sdpi-i18n></div>
+	</sdpi-item>
+	<sdpi-item label="__MSG_scaleMax__">
+		<sdpi-textfield setting="scaleMax" placeholder="__MSG_scaleMaxHint__" pattern="^[0-9]{1,6}$"></sdpi-textfield>
 	</sdpi-item>
 	<sdpi-item label="__MSG_sensorLabel__">
 		<sdpi-textfield setting="sensorName" placeholder="__MSG_sensorLabelHint__" maxlength="8"></sdpi-textfield>
@@ -91,10 +97,10 @@
 		</sdpi-select>
 	</sdpi-item>
 	<sdpi-item label="__MSG_warning__">
-		<sdpi-textfield setting="warn" placeholder="40" pattern="^[0-9]{2,3}$"></sdpi-textfield>
+		<sdpi-textfield setting="warn" placeholder="40" pattern="^[0-9]{1,5}$"></sdpi-textfield>
 	</sdpi-item>
 	<sdpi-item label="__MSG_critical__">
-		<sdpi-textfield setting="crit" placeholder="50" pattern="^[0-9]{2,3}$"></sdpi-textfield>
+		<sdpi-textfield setting="crit" placeholder="50" pattern="^[0-9]{1,5}$"></sdpi-textfield>
 	</sdpi-item>
 	<sdpi-item label="__MSG_alarm__">
 		<sdpi-checkbox setting="alertFlash" default="true" label="__MSG_alarmFlash__"></sdpi-checkbox>

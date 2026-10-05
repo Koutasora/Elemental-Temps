@@ -15,7 +15,7 @@ CPU, GPU and disk temperatures plus RAM usage on your Stream Deck keys, shown as
 
 1. Download `com.elemental.temps.streamDeckPlugin` from the [latest release](../../releases/latest) and double-click it.
 2. In HWiNFO open *Settings* and enable **Shared Memory Support** (once).
-3. Drag one of **CPU Temperature**, **GPU Temperature**, **Disk Temperature**, **RAM Usage** or **Custom Sensor** (category **Elemental Temps**) onto a key. Each action has its own settings; for disks and graphics cards you pick the exact drive / card from a list. **Custom Sensor** shows any temperature sensor HWiNFO exposes (water/coolant temperature, motherboard, VRM...) – pick it from the list and give it a short label.
+3. Drag one of **CPU Temperature**, **GPU Temperature**, **Disk Temperature**, **RAM Usage** or **Custom Sensor** (category **Elemental Temps**) onto a key. Each action has its own settings; for disks and graphics cards you pick the exact drive / card from a list. **Custom Sensor** shows any reading HWiNFO exposes – water/coolant temperature, fan and pump RPM, voltages, power, load… – picked from a list grouped into Motherboard, CPU, GPU, APU, Disks and Fans, with an optional short label. Non-temperature readings have no default alarm thresholds.
 
 > The free version of HWiNFO switches Shared Memory off after about 12 hours. When that happens the key shows **Enable HWiNFO Shared Memory** – just enable it again and the data comes back by itself.
 

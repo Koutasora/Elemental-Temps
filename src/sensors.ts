@@ -8,9 +8,10 @@ import { freemem, totalmem } from "node:os";
 const run = promisify(execFile);
 
 /** `temp` to główna wartość odczytu: °C dla CPU/GPU/dysku, % dla RAM. `name` – krótka nazwa (np. litera dysku). */
-export type Reading = { temp: number; load?: number; power?: number; clock?: number; name?: string; model?: string; source: string };
+export type Reading = { temp: number; unit?: string; load?: number; power?: number; clock?: number; name?: string; model?: string; source: string };
 
 export type ListItem = { label: string; value: string };
+export type ListGroup = { label: string; children: ListItem[] };
 
 /** Lista dysków do wyboru w panelu: "C: · WD_BLACK SN770 500GB", wartość = numer (od 1). */
 export function listDisks(): ListItem[] {
@@ -24,10 +25,30 @@ export function listGpus(): ListItem[] {
 	return [...shmLast.gpus.entries()].sort((a, b) => a[0] - b[0]).map(([i, r]) => ({ value: String(i + 1), label: r.name || `GPU ${i + 1}` }));
 }
 
-/** Wszystkie czujniki temperatury z HWiNFO (np. temperatura wody), klucz = "grupa|etykieta". */
-export function listSensors(): ListItem[] {
+/** Rodzaj urządzenia po nazwie grupy czujników HWiNFO (typ 3 = wentylator ma własną kategorię). */
+function categoryOf(group: string, type: number): string {
+	if (type === 3) return "Fans";
+	if (/^GPU \[#\d+\]/.test(group)) return /radeon\(tm\) graphics|radeon graphics|\bvega\b.*graphics|intel.*(uhd|iris|hd graphics)|\bapu\b/i.test(group) ? "APU / iGPU" : "GPU";
+	if (/^(CPU|Core|Intel Core|AMD Ryzen)\b/i.test(group) || /\b(Ryzen|Core i\d|Xeon|Threadripper)\b/i.test(group)) return "CPU";
+	if (/^S\.M\.A\.R\.T\.|^Drive:|NVMe|\bSSD\b/i.test(group)) return "Disks";
+	if (/DIMM|^Memory/i.test(group)) return "Memory";
+	if (/^Network|Ethernet|Wi-?Fi/i.test(group)) return "Network";
+	return "Motherboard & other";
+}
+const CATEGORY_ORDER = ["Motherboard & other", "CPU", "GPU", "APU / iGPU", "Disks", "Fans", "Memory", "Network"];
+
+/** Wszystkie odczyty HWiNFO do wyboru w Custom Sensor, pogrupowane na płytę, CPU, GPU, APU, dyski i wentylatory. Klucz = "grupa|etykieta|typ". */
+export function listSensors(): ListGroup[] {
 	ensureShm();
-	return [...shmLast.temps.entries()].map(([value, r]) => ({ value, label: `${r.model} · ${r.name}` })).sort((a, b) => a.label.localeCompare(b.label));
+	const groups = new Map<string, ListItem[]>();
+	for (const [value, r] of shmLast.temps) {
+		const type = Number(value.slice(value.lastIndexOf("|") + 1));
+		const cat = categoryOf(r.model ?? "", type);
+		const unit = r.unit === "C" ? "°C" : r.unit;
+		const item = { value, label: `${r.name} (${unit}) · ${(r.model ?? "").replace(/^[A-Za-z. ]+\[#\d+\]: /, "")}` };
+		groups.set(cat, [...(groups.get(cat) ?? []), item]);
+	}
+	return CATEGORY_ORDER.filter((c) => groups.has(c)).map((label) => ({ label, children: groups.get(label)!.sort((a, b) => a.label.localeCompare(b.label)) }));
 }
 
 /** Dowolny wybrany czujnik temperatury z HWiNFO. */
@@ -77,9 +98,9 @@ function ensureShm(): void {
 	shmProc = proc;
 	createInterface({ input: proc.stdout! }).on("line", (line) => {
 		try {
-			const j = JSON.parse(line) as { status?: ShmStatus; cpu?: Omit<Reading, "source">; gpu?: Record<string, Omit<Reading, "source">>; disk?: Record<string, Omit<Reading, "source">>; temps?: { g: string; l: string; v: number }[] };
+			const j = JSON.parse(line) as { status?: ShmStatus; cpu?: Omit<Reading, "source">; gpu?: Record<string, Omit<Reading, "source">>; disk?: Record<string, Omit<Reading, "source">>; sens?: { g: string; l: string; v: number; u: string; t: number }[] };
 			const src = "HWiNFO: pamięć współdzielona";
-			shmLast = { at: Date.now(), status: j.status ?? "unknown", cpu: j.cpu ? { ...j.cpu, source: src } : null, gpus: new Map(Object.entries(j.gpu ?? {}).map(([n, r]) => [Number(n), { ...r, source: src }])), disks: new Map(Object.entries(j.disk ?? {}).map(([n, r]) => [Number(n), { ...r, source: src }])), temps: new Map((j.temps ?? []).map((t) => [`${t.g}|${t.l}`, { temp: t.v, name: t.l, model: t.g, source: src }])) };
+			shmLast = { at: Date.now(), status: j.status ?? "unknown", cpu: j.cpu ? { ...j.cpu, source: src } : null, gpus: new Map(Object.entries(j.gpu ?? {}).map(([n, r]) => [Number(n), { ...r, source: src }])), disks: new Map(Object.entries(j.disk ?? {}).map(([n, r]) => [Number(n), { ...r, source: src }])), temps: new Map((j.sens ?? []).map((t) => [`${t.g}|${t.l}|${t.t}`, { temp: t.v, unit: t.u, name: t.l, model: t.g, source: src }])) };
 		} catch {
 			/* ignoruj śmieci */
 		}

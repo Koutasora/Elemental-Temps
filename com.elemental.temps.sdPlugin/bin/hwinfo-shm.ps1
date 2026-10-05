@@ -43,9 +43,10 @@ while ($true) {
 			# numer karty GPU dla każdego czujnika ($null = to nie jest czujnik GPU)
 			$so = $v.ReadUInt32(20); $ss = $v.ReadUInt32(24); $sn = $v.ReadUInt32(28)
 			$gpuOf = @{}
-			$gpuName = @{}; $diskOf = @{}; $diskName = @{}; $diskModel = @{}; $diskTemp = @{}; $diskCount = 0
+			$snames = @{}; $gpuName = @{}; $diskOf = @{}; $diskName = @{}; $diskModel = @{}; $diskTemp = @{}; $diskCount = 0
 			for ($i = 0; $i -lt $sn; $i++) {
 				$sname = Str $v ($so + $i * $ss + 8) 128
+				$snames[[uint32]$i] = ($sname -replace '["\\]', '')
 				if ($sname -match '^GPU \[#(\d+)\]') {
 					$gn = [int]$Matches[1]; $gpuOf[[uint32]$i] = $gn
 					if (-not $gpuName.ContainsKey($gn)) { $gpuName[$gn] = ((($sname -replace '^GPU \[#\d+\]: ', '') -split ':')[0] -replace '["\\]', '') }
@@ -65,10 +66,15 @@ while ($true) {
 			for ($i = 0; $i -lt $rn; $i++) {
 				$o = $ro + $i * $rs
 				$t = $v.ReadUInt32($o)
-				if ($t -ne 1 -and $t -ne 5 -and $t -ne 6 -and $t -ne 7) { continue }
+				if ($t -lt 1 -or $t -gt 7) { continue }
 				$l = Str $v ($o + 12) 128
 				$gpuNum = $gpuOf[$v.ReadUInt32($o + 4)]
-				if ($t -eq 1) { $tv = $v.ReadDouble($o + 284); if ($tv -gt -50 -and $tv -lt 250) { $tg = (Str $v ($so + $v.ReadUInt32($o + 4) * $ss + 8) 128) -replace '["\\]', ''; $tempList.Add('{"g":"' + $tg + '","l":"' + ($l -replace '["\\]', '') + '","v":' + (Num $tv) + '}') } }
+				# lista wszystkich odczytów do wyboru w akcji Custom Sensor: grupa, etykieta, wartość, jednostka, typ HWiNFO
+				$tv = $v.ReadDouble($o + 284)
+				if ($tv -gt -1e6 -and $tv -lt 1e6) {
+					$u = switch ($t) { 1 { 'C' } 2 { 'V' } 3 { 'RPM' } 4 { 'A' } 5 { 'W' } default { (Str $v ($o + 268) 16) -replace '[^ -~]', '' } }
+					$tempList.Add('{"g":"' + $snames[$v.ReadUInt32($o + 4)] + '","l":"' + ($l -replace '["\\]', '') + '","v":' + (Num $tv) + ',"u":"' + $u + '","t":' + $t + '}')
+				}
 				if ($t -eq 1 -and $l -eq 'Drive Temperature') {
 					$dn = $diskOf[$v.ReadUInt32($o + 4)]
 					if ($null -ne $dn -and -not $diskTemp.ContainsKey($dn)) { $diskTemp[$dn] = $v.ReadDouble($o + 284) }
@@ -109,7 +115,7 @@ while ($true) {
 			$cpu = MakeGroup $cpuVal 'cpu'; if ($cpu) { $parts += '"cpu":' + $cpu }
 			if ($gpuJson.Count) { $parts += '"gpu":{' + ($gpuJson -join ',') + '}' }
 			if ($diskJson.Count) { $parts += '"disk":{' + ($diskJson -join ',') + '}' }
-			if ($tempList.Count) { $parts += '"temps":[' + ($tempList -join ',') + ']' }
+			if ($tempList.Count) { $parts += '"sens":[' + ($tempList -join ',') + ']' }
 			$line = '{' + ($parts -join ',') + '}'
 		}
 		$v.Dispose(); $mmf.Dispose()

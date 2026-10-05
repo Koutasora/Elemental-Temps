@@ -9,7 +9,7 @@
 		SDPIComponents.i18n.locales = {
 			en: {
 				language: "Language", hwinfoNote: "In HWiNFO enable Shared Memory Support (Settings). The free version turns it off after ~12 h – just enable it again. Keep HWiNFO up to date – new CPUs and graphics cards only appear in recent versions.",
-				gpuCard: "Graphics card", diskDrive: "Disk", sensorPick: "Sensor", sensorLabel: "Key label", sensorLabelHint: "e.g. WATER", scaleMax: "Scale max", scaleMaxHint: "auto (e.g. 3000 for RPM)", sensorNote: "Pick any HWiNFO reading: temperatures, fans, voltages, power, load… Thresholds and alarm stay off for non-temperature readings until you set them.", name: "Name", showName: "Show sensor name",
+				gpuCard: "Graphics card", diskDrive: "Disk", sensorPick: "Sensor", sensorLabel: "Key label", sensorLabelHint: "e.g. WATER", scaleMax: "Scale max", listNoGpu: "No GPU found – check HWiNFO", listNoDisk: "No disk found – check HWiNFO", listNoSensor: "No sensors found – check HWiNFO", listStartHwinfo: "Start HWiNFO", listEnableShm: "Enable HWiNFO Shared Memory", scaleMaxHint: "auto (e.g. 3000 for RPM)", sensorNote: "Pick any HWiNFO reading: temperatures, fans, voltages, power, load… Thresholds and alarm stay off for non-temperature readings until you set them.", name: "Name", showName: "Show sensor name",
 				chart: "Chart", chartGauge: "Gauge", chartBar: "Bar", chartLine: "History graph", chartNumber: "Number only",
 				color: "Color", colorAuto: "Automatic (by thresholds)", colorCustom: "Custom", customColor: "Custom color",
 				background: "Background", bgDefault: "Default", bgBlack: "Black", bgCustom: "Custom", customBg: "Custom background",
@@ -20,7 +20,7 @@
 			},
 			pl: {
 				language: "Język", hwinfoNote: "W HWiNFO włącz Obsługę pamięci współdzielonej (Ustawienia). Darmowa wersja wyłącza ją po ok. 12 h – wystarczy włączyć ją ponownie. Aktualizuj HWiNFO – nowe procesory i karty graficzne pojawiają się dopiero w najnowszych wersjach.",
-				gpuCard: "Karta graficzna", diskDrive: "Dysk", sensorPick: "Czujnik", sensorLabel: "Etykieta na klawiszu", sensorLabelHint: "np. WODA", scaleMax: "Koniec skali", scaleMaxHint: "auto (np. 3000 dla RPM)", sensorNote: "Wybierz dowolny odczyt z HWiNFO: temperatury, wentylatory, napięcia, moc, obciążenie… Progi i alarm są wyłączone dla odczytów innych niż temperatura, dopóki ich nie ustawisz.", name: "Nazwa", showName: "Pokaż nazwę czujnika",
+				gpuCard: "Karta graficzna", diskDrive: "Dysk", sensorPick: "Czujnik", sensorLabel: "Etykieta na klawiszu", sensorLabelHint: "np. WODA", scaleMax: "Koniec skali", listNoGpu: "Nie znaleziono karty – sprawdź HWiNFO", listNoDisk: "Nie znaleziono dysku – sprawdź HWiNFO", listNoSensor: "Nie znaleziono czujników – sprawdź HWiNFO", listStartHwinfo: "Uruchom HWiNFO", listEnableShm: "Włącz pamięć współdzieloną HWiNFO", scaleMaxHint: "auto (np. 3000 dla RPM)", sensorNote: "Wybierz dowolny odczyt z HWiNFO: temperatury, wentylatory, napięcia, moc, obciążenie… Progi i alarm są wyłączone dla odczytów innych niż temperatura, dopóki ich nie ustawisz.", name: "Nazwa", showName: "Pokaż nazwę czujnika",
 				chart: "Wykres", chartGauge: "Kołowy wskaźnik", chartBar: "Pasek", chartLine: "Wykres historii", chartNumber: "Tylko liczba",
 				color: "Kolor", colorAuto: "Automatyczny (wg progów)", colorCustom: "Własny", customColor: "Własny kolor",
 				background: "Tło", bgDefault: "Domyślne", bgBlack: "Czarne", bgCustom: "Własne", customBg: "Własny kolor tła",
@@ -57,7 +57,7 @@
 	<sdpi-item data-for="sensor" label="__MSG_sensorPick__">
 		<sdpi-select setting="sensorId" datasource="sensors" show-refresh></sdpi-select>
 	</sdpi-item>
-	<sdpi-item data-for="sensor" label="HWiNFO">
+	<sdpi-item data-for="sensor" label="Info">
 		<div style="font-size:11px;line-height:1.4;opacity:.85"><sdpi-i18n key="sensorNote"></sdpi-i18n></div>
 	</sdpi-item>
 	<sdpi-item data-for="sensor" label="__MSG_scaleMax__">

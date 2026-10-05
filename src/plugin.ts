@@ -1,7 +1,7 @@
 import streamDeck, { action, KeyAction, KeyDownEvent, SingletonAction, WillAppearEvent, WillDisappearEvent, DidReceiveSettingsEvent } from "@elgato/streamdeck";
 import { connection } from "sd-connection";
 import { spawn } from "node:child_process";
-import { ListItem, listDisks, listGpus, listSensors, readCpu, readDisk, readGpu, readRam, readSensor, Reading, shmStatus } from "./sensors";
+import { ListGroup, ListItem, listDisks, listGpus, listSensors, readCpu, readDisk, readGpu, readRam, readSensor, Reading, shmStatus } from "./sensors";
 import { ChartType, renderKey, toDataUri } from "./render";
 
 type Sensor = "cpu" | "gpu" | "disk" | "ram" | "sensor";
@@ -236,11 +236,17 @@ class CustomSensor extends Temperature {}
 for (const a of [new CpuTemperature(), new GpuTemperature(), new DiskTemperature(), new RamUsage(), new CustomSensor()]) streamDeck.actions.registerAction(a);
 
 /** Listy do wyboru w panelu (sdpi-select z datasource): panel wysyła { event: "disks" | "gpus" }, odsyłamy { event, items }. */
-const withFallback = (items: ListItem[], name: string): ListItem[] => (items.length ? items : [1, 2, 3, 4].map((n) => ({ value: String(n), label: `${name} ${n}` })));
+/** Pusta lista = jedna nieaktywna pozycja z przyczyną; "__MSG_x__" tłumaczy panel (lokalizacja pozycji w sdpi-select). */
+function withFallback<T extends ListItem | ListGroup>(items: T[], what: "Gpu" | "Disk" | "Sensor"): (T | ListItem & { disabled: boolean })[] {
+	if (items.length) return items;
+	const key = shmStatus() === "notrunning" ? "listStartHwinfo" : shmStatus() === "disabled" ? "listEnableShm" : `listNo${what}`;
+	// wartość = domyślny numer karty/dysku, żeby ewentualny zapis tej pozycji do ustawień nie zostawił pustego wyboru po powrocie danych
+	return [{ label: `__MSG_${key}__`, value: what === "Sensor" ? "" : "1", disabled: true }];
+}
 /** Odpowiadamy prosto na kontekst akcji, która pytała: po przeładowaniu panelu (zmiana języka) streamDeck.ui gubi bieżącą akcję i odpowiedź by przepadła. */
 streamDeck.ui.onSendToPlugin((ev) => {
 	const event = (ev.payload as { event?: string } | null)?.event;
-	const items = event === "disks" ? withFallback(listDisks(), "Disk") : event === "sensors" ? listSensors() : event === "gpus" ? withFallback(listGpus(), "GPU") : undefined;
+	const items = event === "disks" ? withFallback(listDisks(), "Disk") : event === "sensors" ? withFallback(listSensors(), "Sensor") : event === "gpus" ? withFallback(listGpus(), "Gpu") : undefined;
 	if (items) void connection.send({ event: "sendToPropertyInspector", context: ev.action.id, payload: { event, items } });
 });
 

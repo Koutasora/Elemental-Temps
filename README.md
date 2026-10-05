@@ -9,7 +9,7 @@ CPU, GPU and disk temperatures plus RAM usage on your Stream Deck keys, shown as
 ## Requirements
 
 - Windows 10/11 and Stream Deck software **7.1** or newer
-- [HWiNFO](https://www.hwinfo.com/) (the free version is enough) running in *Sensors* mode with **Shared Memory Support** enabled. RAM usage works without it.
+- [HWiNFO](https://www.hwinfo.com/) (the free version is enough) running in *Sensors* mode with **Shared Memory Support** enabled. RAM usage works without it. **Keep HWiNFO up to date** – new CPUs and graphics cards (for example the NVIDIA RTX 50 series) only show up in the sensor list in recent versions.
 
 ## Install and set up
 
@@ -25,7 +25,7 @@ Messages shown on a key instead of a value:
 | --- | --- |
 | **Enable HWiNFO Shared Memory** | The option is off or has expired |
 | **Start HWiNFO** | HWiNFO is not running |
-| **No data**, **No GPU**, **No disk** | HWiNFO is running, but no matching sensor was found |
+| **No data**, **No GPU**, **No disk** | HWiNFO is running, but no matching sensor was found. First check that the device has its own section with a temperature in the HWiNFO sensors window; if not, update HWiNFO |
 
 ## Options
 

@@ -14,7 +14,7 @@
 				color: "Color", colorAuto: "Automatic (by thresholds)", colorCustom: "Custom", customColor: "Custom color",
 				background: "Background", bgDefault: "Default", bgBlack: "Black", bgCustom: "Custom", customBg: "Custom background",
 				load: "Load", showLoad: "Show load (%)", power: "Power", showPower: "Show power draw (W)", clock: "Clock", showClock: "Show clock speed (MHz/GHz)",
-				unit: "Unit", warning: "Warning (@UNIT@)", critical: "Critical (@UNIT@)",
+				unit: "Unit", warning: "Warning (°C)", critical: "Critical (°C)",
 				alarm: "Alarm", alarmFlash: "Flash red above the critical threshold", alarmSound: "Alarm sound", alarmSoundOpt: "Play a sound (at most every 30 s)",
 				onPress: "On key press", pressRefresh: "Refresh reading", pressChart: "Switch chart type",
 			},
@@ -25,7 +25,7 @@
 				color: "Kolor", colorAuto: "Automatyczny (wg progów)", colorCustom: "Własny", customColor: "Własny kolor",
 				background: "Tło", bgDefault: "Domyślne", bgBlack: "Czarne", bgCustom: "Własne", customBg: "Własny kolor tła",
 				load: "Obciążenie", showLoad: "Pokaż obciążenie (%)", power: "Pobór mocy", showPower: "Pokaż pobór mocy (W)", clock: "Taktowanie", showClock: "Pokaż taktowanie (MHz/GHz)",
-				unit: "Jednostka", warning: "Ostrzeżenie (@UNIT@)", critical: "Krytyczna (@UNIT@)",
+				unit: "Jednostka", warning: "Ostrzeżenie (°C)", critical: "Krytyczna (°C)",
 				alarm: "Alarm", alarmFlash: "Miganie na czerwono po przekroczeniu progu krytycznego", alarmSound: "Dźwięk alarmu", alarmSoundOpt: "Odtwórz dźwięk (max co 30 s)",
 				onPress: "Po naciśnięciu", pressRefresh: "Odśwież odczyt", pressChart: "Zmień typ wykresu",
 			},
@@ -45,19 +45,13 @@
 			<option value="pl">Polski</option>
 		</select>
 	</sdpi-item>
-	<sdpi-item data-for="cpu gpu disk sensor" label="HWiNFO">
+	<sdpi-item label="HWiNFO">
 		<div style="font-size:11px;line-height:1.4;opacity:.85"><sdpi-i18n key="hwinfoNote"></sdpi-i18n></div>
 	</sdpi-item>
-	<sdpi-item data-for="gpu" label="__MSG_gpuCard__">
-		<sdpi-select setting="gpuIndex" datasource="gpus" default="1" show-refresh></sdpi-select>
-	</sdpi-item>
-	<sdpi-item data-for="disk" label="__MSG_diskDrive__">
-		<sdpi-select setting="diskIndex" datasource="disks" default="1" show-refresh></sdpi-select>
-	</sdpi-item>
-	<sdpi-item data-for="sensor" label="__MSG_sensorPick__">
+	<sdpi-item label="__MSG_sensorPick__">
 		<sdpi-select setting="sensorId" datasource="sensors" show-refresh></sdpi-select>
 	</sdpi-item>
-	<sdpi-item data-for="sensor" label="__MSG_sensorLabel__">
+	<sdpi-item label="__MSG_sensorLabel__">
 		<sdpi-textfield setting="sensorName" placeholder="__MSG_sensorLabelHint__" maxlength="8"></sdpi-textfield>
 	</sdpi-item>
 	<sdpi-item label="__MSG_name__">
@@ -90,26 +84,17 @@
 	<sdpi-item id="bgColorItem" label="__MSG_customBg__">
 		<sdpi-color setting="bgColor" default="#1e3a8a"></sdpi-color>
 	</sdpi-item>
-	<sdpi-item data-for="cpu gpu" label="__MSG_load__">
-		<sdpi-checkbox setting="showLoad" default="true" label="__MSG_showLoad__"></sdpi-checkbox>
-	</sdpi-item>
-	<sdpi-item data-for="cpu gpu" label="__MSG_power__">
-		<sdpi-checkbox setting="showPower" label="__MSG_showPower__"></sdpi-checkbox>
-	</sdpi-item>
-	<sdpi-item data-for="cpu gpu" label="__MSG_clock__">
-		<sdpi-checkbox setting="showClock" label="__MSG_showClock__"></sdpi-checkbox>
-	</sdpi-item>
-	<sdpi-item data-for="cpu gpu disk sensor" label="__MSG_unit__">
+	<sdpi-item label="__MSG_unit__">
 		<sdpi-select setting="unit" placeholder="°C">
 			<option value="C">°C</option>
 			<option value="F">°F</option>
 		</sdpi-select>
 	</sdpi-item>
 	<sdpi-item label="__MSG_warning__">
-		<sdpi-textfield setting="warn" placeholder="@WARN@" pattern="^[0-9]{2,3}$"></sdpi-textfield>
+		<sdpi-textfield setting="warn" placeholder="40" pattern="^[0-9]{2,3}$"></sdpi-textfield>
 	</sdpi-item>
 	<sdpi-item label="__MSG_critical__">
-		<sdpi-textfield setting="crit" placeholder="@CRIT@" pattern="^[0-9]{2,3}$"></sdpi-textfield>
+		<sdpi-textfield setting="crit" placeholder="50" pattern="^[0-9]{2,3}$"></sdpi-textfield>
 	</sdpi-item>
 	<sdpi-item label="__MSG_alarm__">
 		<sdpi-checkbox setting="alertFlash" default="true" label="__MSG_alarmFlash__"></sdpi-checkbox>

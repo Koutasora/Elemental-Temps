@@ -1,14 +1,17 @@
 import streamDeck, { action, KeyAction, KeyDownEvent, SingletonAction, WillAppearEvent, WillDisappearEvent, DidReceiveSettingsEvent } from "@elgato/streamdeck";
+import { connection } from "sd-connection";
 import { spawn } from "node:child_process";
-import { ListItem, listDisks, listGpus, readCpu, readDisk, readGpu, readRam, Reading, shmStatus } from "./sensors";
+import { ListItem, listDisks, listGpus, listSensors, readCpu, readDisk, readGpu, readRam, readSensor, Reading, shmStatus } from "./sensors";
 import { ChartType, renderKey, toDataUri } from "./render";
 
-type Sensor = "cpu" | "gpu" | "disk" | "ram";
+type Sensor = "cpu" | "gpu" | "disk" | "ram" | "sensor";
 
 type Settings = {
 	sensor?: Sensor;
 	gpuIndex?: number | string;
 	diskIndex?: number | string;
+	sensorId?: string;
+	sensorName?: string;
 	unit?: "C" | "F";
 	chart?: ChartType;
 	showLoad?: boolean;
@@ -34,6 +37,7 @@ const DEFAULTS: Record<Sensor, { warn: number; crit: number; min: number; max: n
 	gpu: { warn: 70, crit: 83, min: 20, max: 100, kind: "temp" },
 	disk: { warn: 50, crit: 65, min: 20, max: 80, kind: "temp" },
 	ram: { warn: 80, crit: 92, min: 0, max: 100, kind: "percent" },
+	sensor: { warn: 40, crit: 50, min: 15, max: 60, kind: "temp" },
 };
 const POLL_MS = 2000;
 const FLASH_MS = 600;
@@ -54,7 +58,7 @@ const diskIndexOf = (s: Settings) => Math.max(0, (Number(s.diskIndex) || 1) - 1)
 /** klucz odczytu: "cpu", "ram", "gpu0", "gpu1", "disk0"... */
 const keyOf = (s: Settings) => {
 	const sensor = sensorOf(s);
-	return sensor === "gpu" ? `gpu${gpuIndexOf(s)}` : sensor === "disk" ? `disk${diskIndexOf(s)}` : sensor;
+	return sensor === "gpu" ? `gpu${gpuIndexOf(s)}` : sensor === "disk" ? `disk${diskIndexOf(s)}` : sensor === "sensor" ? `sensor:${s.sensorId ?? ""}` : sensor;
 };
 const thresholds = (s: Settings) => {
 	const def = DEFAULTS[sensorOf(s)];
@@ -63,7 +67,7 @@ const thresholds = (s: Settings) => {
 
 function subText(r: Reading, s: Settings): string | undefined {
 	if (sensorOf(s) === "ram") return r.name; // np. "18.2 / 32 GB"
-	if (sensorOf(s) === "disk") return undefined;
+	if (sensorOf(s) === "disk" || sensorOf(s) === "sensor") return undefined;
 	const parts: string[] = [];
 	if (s.showLoad !== false && r.load !== undefined) parts.push(`${Math.round(r.load)}%`);
 	if (s.showPower === true && r.power !== undefined) parts.push(`${Math.round(r.power)} W`);
@@ -79,7 +83,7 @@ function noDataText(sensor: Sensor): string {
 		case "disabled":
 			return "Enable\nHWiNFO\nShared Memory";
 		default:
-			return sensor === "gpu" ? "No GPU" : sensor === "disk" ? "No disk" : "No data";
+			return sensor === "gpu" ? "No GPU" : sensor === "disk" ? "No disk" : sensor === "sensor" ? "No\nsensor" : "No data";
 	}
 }
 
@@ -112,7 +116,7 @@ async function draw(id: string): Promise<void> {
 	const { warn, crit } = thresholds(s);
 	const idx = gpuIndexOf(s);
 	const meta = DEFAULTS[sensor];
-	const label = sensor === "gpu" ? (idx > 0 ? `GPU ${idx + 1}` : "GPU") : sensor === "disk" ? `DISK ${(r?.name ?? String(diskIndexOf(s) + 1)).slice(0, 8)}` : sensor.toUpperCase();
+	const label = sensor === "gpu" ? (idx > 0 ? `GPU ${idx + 1}` : "GPU") : sensor === "disk" ? `DISK ${(r?.name ?? String(diskIndexOf(s) + 1)).slice(0, 8)}` : sensor === "sensor" ? (s.sensorName?.trim() || r?.name || "SENSOR").slice(0, 8).toUpperCase() : sensor.toUpperCase();
 	const svg = renderKey({
 		label,
 		temp: r?.temp ?? null,
@@ -138,7 +142,7 @@ async function tick(): Promise<void> {
 	const keys = new Set([...visible.values()].map((e) => keyOf(e.settings)));
 	await Promise.all(
 		[...keys].map(async (k) => {
-			const r = k === "cpu" ? await readCpu() : k === "ram" ? readRam() : k.startsWith("disk") ? await readDisk(Number(k.slice(4))) : await readGpu(Number(k.slice(3)));
+			const r = k === "cpu" ? await readCpu() : k === "ram" ? readRam() : k.startsWith("sensor:") ? await readSensor(k.slice(7)) : k.startsWith("disk") ? await readDisk(Number(k.slice(4))) : await readGpu(Number(k.slice(3)));
 			last.set(k, r);
 			if (r) history.set(k, [...(history.get(k) ?? []), r.temp].slice(-HISTORY_LEN));
 		}),
@@ -169,7 +173,7 @@ function ensureTimers(): void {
 	}
 }
 
-/** Czujnik wynika z akcji (UUID kończy się na .cpu / .gpu / .disk / .ram), a nie z ustawień klawisza. */
+/** Czujnik wynika z akcji (UUID kończy się na .cpu / .gpu / .disk / .ram / .sensor), a nie z ustawień klawisza. */
 const withSensor = (s: Settings, manifestId: string): Settings => ({ ...s, sensor: manifestId.split(".").pop() as Sensor });
 
 class Temperature extends SingletonAction<Settings> {
@@ -214,15 +218,18 @@ class GpuTemperature extends Temperature {}
 class DiskTemperature extends Temperature {}
 @action({ UUID: "com.elemental.temps.ram" })
 class RamUsage extends Temperature {}
+@action({ UUID: "com.elemental.temps.sensor" })
+class CustomSensor extends Temperature {}
 
-for (const a of [new CpuTemperature(), new GpuTemperature(), new DiskTemperature(), new RamUsage()]) streamDeck.actions.registerAction(a);
+for (const a of [new CpuTemperature(), new GpuTemperature(), new DiskTemperature(), new RamUsage(), new CustomSensor()]) streamDeck.actions.registerAction(a);
 
 /** Listy do wyboru w panelu (sdpi-select z datasource): panel wysyła { event: "disks" | "gpus" }, odsyłamy { event, items }. */
 const withFallback = (items: ListItem[], name: string): ListItem[] => (items.length ? items : [1, 2, 3, 4].map((n) => ({ value: String(n), label: `${name} ${n}` })));
+/** Odpowiadamy prosto na kontekst akcji, która pytała: po przeładowaniu panelu (zmiana języka) streamDeck.ui gubi bieżącą akcję i odpowiedź by przepadła. */
 streamDeck.ui.onSendToPlugin((ev) => {
 	const event = (ev.payload as { event?: string } | null)?.event;
-	if (event === "disks") void streamDeck.ui.sendToPropertyInspector({ event, items: withFallback(listDisks(), "Disk") });
-	else if (event === "gpus") void streamDeck.ui.sendToPropertyInspector({ event, items: withFallback(listGpus(), "GPU") });
+	const items = event === "disks" ? withFallback(listDisks(), "Disk") : event === "sensors" ? listSensors() : event === "gpus" ? withFallback(listGpus(), "GPU") : undefined;
+	if (items) void connection.send({ event: "sendToPropertyInspector", context: ev.action.id, payload: { event, items } });
 });
 
 void streamDeck.connect();

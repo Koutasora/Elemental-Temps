@@ -119,7 +119,10 @@ function messageBody(text: string): string {
 	return lines.map((l, i) => `<text x="72" y="${(y0 + i * step).toFixed(1)}" text-anchor="middle" ${FONT} font-size="${s}" font-weight="700" fill="${i === 0 ? theme.warn : theme.fg}">${l}</text>`).join("");
 }
 
+const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 export function renderKey(v: KeyView): string {
+	v = { ...v, label: esc(v.label), sub: v.sub && esc(v.sub), message: v.message && esc(v.message) };
 	theme = themeFor(v.alertFlash ? "#991b1b" : v.bgColor);
 	const has = v.temp !== null;
 	const t = v.temp ?? 0;

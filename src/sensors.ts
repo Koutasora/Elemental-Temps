@@ -24,6 +24,18 @@ export function listGpus(): ListItem[] {
 	return [...shmLast.gpus.entries()].sort((a, b) => a[0] - b[0]).map(([i, r]) => ({ value: String(i + 1), label: r.name || `GPU ${i + 1}` }));
 }
 
+/** Wszystkie czujniki temperatury z HWiNFO (np. temperatura wody), klucz = "grupa|etykieta". */
+export function listSensors(): ListItem[] {
+	ensureShm();
+	return [...shmLast.temps.entries()].map(([value, r]) => ({ value, label: `${r.model} · ${r.name}` })).sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/** Dowolny wybrany czujnik temperatury z HWiNFO. */
+export async function readSensor(id: string): Promise<Reading | null> {
+	ensureShm();
+	return Date.now() - shmLast.at < 8000 ? (shmLast.temps.get(id) ?? null) : null;
+}
+
 /** Dysk (SMART "Drive Temperature") z HWiNFO – w kolejności czujników S.M.A.R.T. */
 export async function readDisk(index = 0): Promise<Reading | null> {
 	ensureShm();
@@ -51,7 +63,7 @@ export async function readCpu(): Promise<Reading | null> {
 // --- HWiNFO shared memory: jeden długo działający proces PowerShell, jedna linia JSON na 2 s ---
 let shmProc: ChildProcess | undefined;
 export type ShmStatus = "ok" | "notrunning" | "disabled" | "unknown";
-let shmLast: { cpu: Reading | null; gpus: Map<number, Reading>; disks: Map<number, Reading>; status: ShmStatus; at: number } = { cpu: null, gpus: new Map(), disks: new Map(), status: "unknown", at: 0 };
+let shmLast: { cpu: Reading | null; gpus: Map<number, Reading>; disks: Map<number, Reading>; temps: Map<string, Reading>; status: ShmStatus; at: number } = { cpu: null, gpus: new Map(), disks: new Map(), temps: new Map(), status: "unknown", at: 0 };
 let shmStartedAt = 0;
 
 function ensureShm(): void {
@@ -65,9 +77,9 @@ function ensureShm(): void {
 	shmProc = proc;
 	createInterface({ input: proc.stdout! }).on("line", (line) => {
 		try {
-			const j = JSON.parse(line) as { status?: ShmStatus; cpu?: Omit<Reading, "source">; gpu?: Record<string, Omit<Reading, "source">>; disk?: Record<string, Omit<Reading, "source">> };
+			const j = JSON.parse(line) as { status?: ShmStatus; cpu?: Omit<Reading, "source">; gpu?: Record<string, Omit<Reading, "source">>; disk?: Record<string, Omit<Reading, "source">>; temps?: { g: string; l: string; v: number }[] };
 			const src = "HWiNFO: pamięć współdzielona";
-			shmLast = { at: Date.now(), status: j.status ?? "unknown", cpu: j.cpu ? { ...j.cpu, source: src } : null, gpus: new Map(Object.entries(j.gpu ?? {}).map(([n, r]) => [Number(n), { ...r, source: src }])), disks: new Map(Object.entries(j.disk ?? {}).map(([n, r]) => [Number(n), { ...r, source: src }])) };
+			shmLast = { at: Date.now(), status: j.status ?? "unknown", cpu: j.cpu ? { ...j.cpu, source: src } : null, gpus: new Map(Object.entries(j.gpu ?? {}).map(([n, r]) => [Number(n), { ...r, source: src }])), disks: new Map(Object.entries(j.disk ?? {}).map(([n, r]) => [Number(n), { ...r, source: src }])), temps: new Map((j.temps ?? []).map((t) => [`${t.g}|${t.l}`, { temp: t.v, name: t.l, model: t.g, source: src }])) };
 		} catch {
 			/* ignoruj śmieci */
 		}

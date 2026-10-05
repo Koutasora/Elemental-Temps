@@ -1,4 +1,4 @@
-// Generuje osobne strony ustawień (ui/cpu.html, gpu.html, disk.html, ram.html) z pi/template.html.
+// Generuje osobne strony ustawień (ui/cpu.html, gpu.html, disk.html, ram.html, sensor.html) z pi/template.html.
 // Bloki <sdpi-item data-for="cpu gpu"> trafiają tylko na wskazane strony; pozostałe są wspólne.
 import fs from "node:fs";
 import path from "node:path";
@@ -14,6 +14,7 @@ const SENSORS = {
 	gpu: { unit: "°C", warn: 70, crit: 83 },
 	disk: { unit: "°C", warn: 50, crit: 65 },
 	ram: { unit: "%", warn: 80, crit: 92 },
+	sensor: { unit: "°C", warn: 40, crit: 50 },
 };
 
 const block = /[ \t]*<sdpi-item\b[^>]*\bdata-for="([^"]*)"[^>]*>[\s\S]*?<\/sdpi-item>\n?/g;

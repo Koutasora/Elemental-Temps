@@ -16,9 +16,9 @@ $rules = @{
 	cpuPower = @(5, @('^CPU Package Power$', '^CPU PPT$', '^CPU Core Power$', '^Core Power$'))
 	cpuLoad  = @(7, @('^Total CPU Usage$', '^Total CPU Utility$'))
 	cpuClock = @(6, @('^Average Effective Clock$', '^Core Clocks? \(avg\)$', '^Average Clock$'))
-	gpuTemp  = @(1, @('^GPU Temperature$', '^GPU Core Temperature$', '^GPU Temperature \(Edge\)$', '^GPU Hot Spot Temperature$', '^GPU Hot Spot$'))
+	gpuTemp  = @(1, @('^GPU Temperature$', '^GPU Core Temperature$', '^GPU Temperature \(Edge\)$', '^GPU Hot Spot Temperature$', '^GPU Hot Spot$', '^GPU .*Temperature'))
 	gpuPower = @(5, @('^GPU Power$', '^GPU Total Board Power$', '^GPU ASIC Power$', '^GPU Chip Power$', '^GPU Core Power$'))
-	gpuLoad  = @(7, @('^GPU Core Load$', '^GPU Utilization$', '^GPU Core Utilization$', '^GPU D3D Usage$', '^GPU Usage$'))
+	gpuLoad  = @(7, @('^GPU Core Load$', '^GPU Utilization$', '^GPU Core Utilization$', '^GPU D3D Usage$', '^GPU Usage$', '^GPU .*(Load|Utili[sz]ation|Usage)'))
 	gpuClock = @(6, @('^GPU Clock$', '^GPU Core Clock$'))
 }
 $coreTempRe = '^(P-core |E-core |Core )\d+$'
@@ -61,12 +61,14 @@ while ($true) {
 			$best = @{}   # klucz ("cpuTemp" albo "gpuTemp|0") => @(indeks wzorca, wartość)
 			$coreTemps = New-Object System.Collections.Generic.List[double]
 			$coreClocks = New-Object System.Collections.Generic.List[double]
+			$tempList = New-Object System.Collections.Generic.List[string]
 			for ($i = 0; $i -lt $rn; $i++) {
 				$o = $ro + $i * $rs
 				$t = $v.ReadUInt32($o)
 				if ($t -ne 1 -and $t -ne 5 -and $t -ne 6 -and $t -ne 7) { continue }
 				$l = Str $v ($o + 12) 128
 				$gpuNum = $gpuOf[$v.ReadUInt32($o + 4)]
+				if ($t -eq 1) { $tv = $v.ReadDouble($o + 284); if ($tv -gt -50 -and $tv -lt 250) { $tg = (Str $v ($so + $v.ReadUInt32($o + 4) * $ss + 8) 128) -replace '["\\]', ''; $tempList.Add('{"g":"' + $tg + '","l":"' + ($l -replace '["\\]', '') + '","v":' + (Num $tv) + '}') } }
 				if ($t -eq 1 -and $l -eq 'Drive Temperature') {
 					$dn = $diskOf[$v.ReadUInt32($o + 4)]
 					if ($null -ne $dn -and -not $diskTemp.ContainsKey($dn)) { $diskTemp[$dn] = $v.ReadDouble($o + 284) }
@@ -107,6 +109,7 @@ while ($true) {
 			$cpu = MakeGroup $cpuVal 'cpu'; if ($cpu) { $parts += '"cpu":' + $cpu }
 			if ($gpuJson.Count) { $parts += '"gpu":{' + ($gpuJson -join ',') + '}' }
 			if ($diskJson.Count) { $parts += '"disk":{' + ($diskJson -join ',') + '}' }
+			if ($tempList.Count) { $parts += '"temps":[' + ($tempList -join ',') + ']' }
 			$line = '{' + ($parts -join ',') + '}'
 		}
 		$v.Dispose(); $mmf.Dispose()

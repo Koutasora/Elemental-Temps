@@ -9,7 +9,7 @@
 		SDPIComponents.i18n.locales = {
 			en: {
 				language: "Language", hwinfoNote: "In HWiNFO enable Shared Memory Support (Settings). The free version turns it off after ~12 h – just enable it again.",
-				gpuCard: "Graphics card", diskDrive: "Disk", name: "Name", showName: "Show sensor name",
+				gpuCard: "Graphics card", diskDrive: "Disk", sensorPick: "Sensor", sensorLabel: "Key label", sensorLabelHint: "e.g. WATER", name: "Name", showName: "Show sensor name",
 				chart: "Chart", chartGauge: "Gauge", chartBar: "Bar", chartLine: "History graph", chartNumber: "Number only",
 				color: "Color", colorAuto: "Automatic (by thresholds)", colorCustom: "Custom", customColor: "Custom color",
 				background: "Background", bgDefault: "Default", bgBlack: "Black", bgCustom: "Custom", customBg: "Custom background",
@@ -20,7 +20,7 @@
 			},
 			pl: {
 				language: "Język", hwinfoNote: "W HWiNFO włącz Obsługę pamięci współdzielonej (Ustawienia). Darmowa wersja wyłącza ją po ok. 12 h – wystarczy włączyć ją ponownie.",
-				gpuCard: "Karta graficzna", diskDrive: "Dysk", name: "Nazwa", showName: "Pokaż nazwę czujnika",
+				gpuCard: "Karta graficzna", diskDrive: "Dysk", sensorPick: "Czujnik", sensorLabel: "Etykieta na klawiszu", sensorLabelHint: "np. WODA", name: "Nazwa", showName: "Pokaż nazwę czujnika",
 				chart: "Wykres", chartGauge: "Kołowy wskaźnik", chartBar: "Pasek", chartLine: "Wykres historii", chartNumber: "Tylko liczba",
 				color: "Kolor", colorAuto: "Automatyczny (wg progów)", colorCustom: "Własny", customColor: "Własny kolor",
 				background: "Tło", bgDefault: "Domyślne", bgBlack: "Czarne", bgCustom: "Własne", customBg: "Własny kolor tła",
@@ -30,13 +30,14 @@
 				onPress: "Po naciśnięciu", pressRefresh: "Odśwież odczyt", pressChart: "Zmień typ wykresu",
 			},
 		};
-		// language: own choice (saved in this inspector's storage) wins; "auto" follows Stream Deck / browser language; default English
-		var langChoice = "auto";
-		try { langChoice = localStorage.getItem("elementalLang") || "auto"; } catch (e) {}
-		SDPIComponents.i18n.language = langChoice === "auto" ? (SDPIComponents.i18n.locales[SDPIComponents.i18n.language] ? SDPIComponents.i18n.language : "en") : langChoice;
+		// language: own choice (kept in Stream Deck global settings) wins; "auto" follows Stream Deck / browser language; default English.
+		// The page must never be reloaded (Stream Deck connects it only once), so the markup lives in a <template> and is re-rendered instead.
+		var autoLang = SDPIComponents.i18n.locales[SDPIComponents.i18n.language] ? SDPIComponents.i18n.language : "en";
 	</script>
 </head>
 <body>
+	<div id="root"></div>
+	<template id="tpl">
 	<sdpi-item label="__MSG_language__">
 		<select id="langSel" style="width:100%;background:#2d2d2d;color:#d8d8d8;border:1px solid #555;border-radius:4px;padding:4px">
 			<option value="auto">Auto</option>
@@ -104,29 +105,46 @@
 			<option value="chart">__MSG_pressChart__</option>
 		</sdpi-select>
 	</sdpi-item>
+	</template>
 	<script>
-		// language picker: remember the choice and reload so every label is rebuilt in the new language
-		try {
+		var langChoice = "auto";
+		function mount() {
+			SDPIComponents.i18n.language = langChoice === "auto" ? autoLang : langChoice;
+			var root = document.getElementById("root");
+			root.innerHTML = document.getElementById("tpl").innerHTML;
+			// sdpi-select only notices <option> children added after it is connected (as happens while the page is parsed), so re-add them
+			[].forEach.call(root.querySelectorAll("sdpi-select"), function (s) {
+				var kids = [].slice.call(s.children);
+				kids.forEach(function (k) { s.removeChild(k); });
+				kids.forEach(function (k) { s.appendChild(k); });
+			});
 			var sel = document.getElementById("langSel");
 			sel.value = langChoice;
 			sel.addEventListener("change", function () {
-				try { localStorage.setItem("elementalLang", sel.value); } catch (e) {}
-				location.reload();
+				langChoice = sel.value;
+				try { SDPIComponents.streamDeckClient.setGlobalSettings({ lang: langChoice }); } catch (e) { console.error(e); }
+				mount();
 			});
-		} catch (err) { console.error(err); }
+			try { SDPIComponents.streamDeckClient.getSettings().then(function (e) { apply(e.payload.settings); }); } catch (e) { console.error(e); }
+		}
 
 		// show fields only when they make sense (if this fails, all fields simply stay visible)
+		function show(id, on) { var el = document.getElementById(id); if (el) el.style.display = on ? "" : "none"; }
+		function apply(s) {
+			s = s || {};
+			show("colorItem", s.colorMode === "custom");
+			show("bgColorItem", s.bgMode === "custom");
+			show("soundItem", s.alertFlash !== false);
+		}
+		// render at once (never wait for the connection), then re-render if a saved language differs
+		mount();
 		try {
-			const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? "" : "none"; };
-			const apply = (s) => {
-				s = s || {};
-				show("colorItem", s.colorMode === "custom");
-				show("bgColorItem", s.bgMode === "custom");
-				show("soundItem", s.alertFlash !== false);
-			};
-			const { streamDeckClient } = SDPIComponents;
-			streamDeckClient.getSettings().then((e) => apply(e.payload.settings));
-			streamDeckClient.didReceiveSettings.subscribe((e) => apply(e.payload.settings));
+			var client = SDPIComponents.streamDeckClient;
+			client.didReceiveSettings.subscribe(function (e) { apply(e.payload.settings); });
+			client.getGlobalSettings().then(function (g) {
+				var saved = (g && g.lang) || "auto"; // resolves to the settings object itself
+				if (saved !== langChoice) { langChoice = saved; mount(); }
+			});
 		} catch (err) {
 			console.error(err);
 		}

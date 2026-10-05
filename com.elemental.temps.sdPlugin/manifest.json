@@ -86,6 +86,22 @@
           "ShowTitle": false
         }
       ]
+    },
+    {
+      "UUID": "com.elemental.temps.sensor",
+      "Name": "Custom Sensor",
+      "Tooltip": "Shows any HWiNFO temperature sensor, e.g. water or coolant temperature.",
+      "Icon": "imgs/action-icon",
+      "PropertyInspectorPath": "ui/sensor.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/key-default",
+          "ShowTitle": false
+        }
+      ]
     }
   ]
 }

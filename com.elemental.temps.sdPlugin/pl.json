@@ -16,5 +16,9 @@
 	"com.elemental.temps.ram": {
 		"Name": "Zajętość RAM",
 		"Tooltip": "Pokazuje, ile pamięci RAM jest używane."
+	},
+	"com.elemental.temps.sensor": {
+		"Name": "Własny czujnik",
+		"Tooltip": "Pokazuje dowolny czujnik temperatury z HWiNFO, np. temperaturę wody lub płynu."
 	}
 }

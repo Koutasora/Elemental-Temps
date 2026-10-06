@@ -91,7 +91,9 @@ function lineChart(v: KeyView, c: string): string {
 	const h = v.history;
 	if (h.length < 2) return `<line x1="${X0}" y1="${Y1}" x2="${X1}" y2="${Y1}" stroke="${theme.track}" stroke-width="3" stroke-linecap="round"/>`;
 	const lo0 = Math.min(...h), hi0 = Math.max(...h);
-	const span = Math.max(20, hi0 - lo0 + 6);
+	// minimalna rozpiętość skali: im mniejsza, tym "żywszy" wykres (temperatura ±1 °C widać wyraźnie)
+	const minSpan = v.kind === "temp" ? 6 : v.kind === "percent" ? 10 : Math.max(2, Math.abs(hi0) * 0.1);
+	const span = Math.max(minSpan, (hi0 - lo0) * 1.3);
 	const lo = (lo0 + hi0) / 2 - span / 2;
 	const pts = h.map((t, i) => [X0 + ((X1 - X0) * i) / (h.length - 1), Y1 - ((Y1 - Y0) * (t - lo)) / span]);
 	const line = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");

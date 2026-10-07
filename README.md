@@ -39,7 +39,7 @@ Messages shown on a key instead of a value:
 
 ## Supported hardware
 
-Sensors are matched by their HWiNFO labels, with priority lists for Intel (`CPU Package`), AMD (`CPU (Tctl/Tdie)`, `CPU PPT`) and for NVIDIA, AMD and Intel graphics (`GPU [#N]` sensors); disks come from the S.M.A.R.T. sensors. Developed and tested on Intel + NVIDIA; AMD and Radeon / Intel GPUs are supported through HWiNFO sensor names and are less tested. If a key shows *No data* although HWiNFO shows the sensor, the label probably differs – please open an issue and include the sensor name, or see `$rules` in `com.elemental.temps.sdPlugin/bin/hwinfo-shm.ps1`.
+Sensors are matched by their HWiNFO labels, with priority lists for Intel (`CPU Package`), AMD (`CPU (Tctl/Tdie)`, `CPU PPT`) and for NVIDIA, AMD and Intel graphics (`GPU [#N]` sensors, or `iGPU [#N]` / `dGPU [#N]` in newer HWiNFO versions); disks come from the S.M.A.R.T. sensors. Developed and tested on Intel + NVIDIA; AMD and Radeon / Intel GPUs are supported through HWiNFO sensor names and are less tested. If a key shows *No data* although HWiNFO shows the sensor, the label probably differs – please open an issue and include the sensor name, or see `$rules` in `com.elemental.temps.sdPlugin/bin/hwinfo-shm.ps1`.
 
 ## Good to know
 

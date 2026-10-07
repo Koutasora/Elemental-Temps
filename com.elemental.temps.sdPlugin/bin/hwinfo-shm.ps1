@@ -42,21 +42,27 @@ while ($true) {
 		if ($v.ReadUInt32(0) -eq 0x53695748 -and $age -lt 15) {
 			# numer karty GPU dla każdego czujnika ($null = to nie jest czujnik GPU)
 			$so = $v.ReadUInt32(20); $ss = $v.ReadUInt32(24); $sn = $v.ReadUInt32(28)
-			$gpuOf = @{}; $gpuIdx = @{}
+			$gpuOf = @{}; $gpuIdx = @{}; $gpuSeen = [ordered]@{}
 			$snames = @{}; $gpuName = @{}; $diskOf = @{}; $diskName = @{}; $diskModel = @{}; $diskTemp = @{}; $diskCount = 0
+			# numery kart: "GPU [#N]" zachowuje N; nowsze HWiNFO pisze "dGPU [#0]" / "iGPU [#0]" – najpierw dedykowane,
+			# potem zintegrowane (kolejne wolne numery), żeby domyślna karta 1 była kartą dedykowaną
+			for ($i = 0; $i -lt $sn; $i++) {
+				$sname = Str $v ($so + $i * $ss + 8) 128
+				if ($sname -match '^([A-Za-z]?GPU) \[#(\d+)\]' -and -not $gpuSeen.Contains($Matches[0])) { $gpuSeen[$Matches[0]] = @($Matches[1], [int]$Matches[2], $sname) }
+			}
+			foreach ($pass in 'GPU', 'dGPU', '*') {
+				foreach ($gk in $gpuSeen.Keys) {
+					$e = $gpuSeen[$gk]
+					if ($gpuIdx.Contains($gk) -or ($pass -ne '*' -and $e[0] -ne $pass)) { continue }
+					if ($e[0] -eq 'GPU') { $gn = $e[1] } else { $gn = 0; while ($gpuName.ContainsKey($gn)) { $gn++ } }
+					$gpuIdx[$gk] = $gn
+					$gpuName[$gn] = ((($e[2] -replace '^[A-Za-z]?GPU \[#\d+\]: ', '') -split ':')[0] -replace '["\\]', '')
+				}
+			}
 			for ($i = 0; $i -lt $sn; $i++) {
 				$sname = Str $v ($so + $i * $ss + 8) 128
 				$snames[[uint32]$i] = ($sname -replace '["\\]', '')
-				if ($sname -match '^([A-Za-z]?GPU) \[#(\d+)\]') {
-					# "GPU [#N]" zachowuje numer N; "iGPU [#0]" / "dGPU [#0]" (nowsze HWiNFO) dostają kolejny wolny numer
-					$gk = $Matches[0]
-					if (-not $gpuIdx.ContainsKey($gk)) {
-						if ($Matches[1] -eq 'GPU') { $gn = [int]$Matches[2] } else { $gn = 0; while ($gpuName.ContainsKey($gn)) { $gn++ } }
-						$gpuIdx[$gk] = $gn
-						$gpuName[$gn] = ((($sname -replace '^[A-Za-z]?GPU \[#\d+\]: ', '') -split ':')[0] -replace '["\\]', '')
-					}
-					$gpuOf[[uint32]$i] = $gpuIdx[$gk]
-				}
+				if ($sname -match '^[A-Za-z]?GPU \[#\d+\]') { $gpuOf[[uint32]$i] = $gpuIdx[$Matches[0]] }
 				elseif ($sname -match '^S\.M\.A\.R\.T\.: (.*)$') {
 					# dysk: litery z "[C:]" albo model sprzed " ("
 					$rest = $Matches[1]

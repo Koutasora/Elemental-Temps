@@ -25,11 +25,13 @@ export function listGpus(): ListItem[] {
 	return [...shmLast.gpus.entries()].sort((a, b) => a[0] - b[0]).map(([i, r]) => ({ value: String(i + 1), label: r.name || `GPU ${i + 1}` }));
 }
 
+const INTEGRATED = /radeon\(tm\) graphics|radeon graphics|\bvega\b.*graphics|intel.*(uhd|iris|hd graphics|arc(\(tm\))? graphics)/i;
+
 /** Rodzaj urządzenia po nazwie grupy czujników HWiNFO (typ 3 = wentylator ma własną kategorię). */
 function categoryOf(group: string, type: number): string {
 	if (type === 3) return "Fans";
 	if (/^iGPU \[#\d+\]/.test(group)) return "APU / iGPU";
-	if (/^[A-Za-z]?GPU \[#\d+\]/.test(group)) return /radeon\(tm\) graphics|radeon graphics|\bvega\b.*graphics|intel.*(uhd|iris|hd graphics)|\bapu\b/i.test(group) ? "APU / iGPU" : "GPU";
+	if (/^[A-Za-z]?GPU \[#\d+\]/.test(group)) return INTEGRATED.test(group) || /\bapu\b/i.test(group) ? "APU / iGPU" : "GPU";
 	if (/^(CPU|Core|Intel Core|AMD Ryzen)\b/i.test(group) || /\b(Ryzen|Core i\d|Xeon|Threadripper)\b/i.test(group)) return "CPU";
 	if (/^S\.M\.A\.R\.T\.|^Drive:|NVMe|\bSSD\b/i.test(group)) return "Disks";
 	if (/DIMM|^Memory/i.test(group)) return "Memory";
@@ -74,7 +76,12 @@ export function readRam(): Reading {
 /** GPU: HWiNFO pamięć współdzielona (każda karta osobno, po nazwie czujnika "GPU [#N]"). */
 export async function readGpu(index = 0): Promise<Reading | null> {
 	ensureShm();
-	return Date.now() - shmLast.at < 8000 ? (shmLast.gpus.get(index) ?? null) : null;
+	if (Date.now() - shmLast.at >= 8000) return null;
+	const r = shmLast.gpus.get(index);
+	if (r || index > 0) return r ?? null;
+	// domyślna karta 1 bez odczytu (np. iGPU bez temperatury pod numerem 0) – pierwsza dostępna, dedykowana przed zintegrowaną
+	const cards = [...shmLast.gpus.entries()].sort((a, b) => a[0] - b[0]).map(([, c]) => c);
+	return cards.find((c) => !INTEGRATED.test(c.name ?? "")) ?? cards[0] ?? null;
 }
 
 /** CPU: HWiNFO pamięć współdzielona -> HWiNFO rejestr ("Report value in Gadget") -> LibreHardwareMonitor (HTTP). */

@@ -3,7 +3,7 @@
   "SDKVersion": 3,
   "UUID": "com.elemental.temps",
   "Name": "Elemental Temps",
-  "Version": "1.1.2.0",
+  "Version": "1.1.3.0",
   "Author": "Rafał",
   "Description": "CPU, GPU, disk temperatures, RAM usage and any HWiNFO sensor (water, fans, voltages…) on Stream Deck keys, with a gauge, bar, history graph or big number.",
   "Icon": "imgs/plugin-icon",

@@ -28,7 +28,8 @@ export function listGpus(): ListItem[] {
 /** Rodzaj urządzenia po nazwie grupy czujników HWiNFO (typ 3 = wentylator ma własną kategorię). */
 function categoryOf(group: string, type: number): string {
 	if (type === 3) return "Fans";
-	if (/^GPU \[#\d+\]/.test(group)) return /radeon\(tm\) graphics|radeon graphics|\bvega\b.*graphics|intel.*(uhd|iris|hd graphics)|\bapu\b/i.test(group) ? "APU / iGPU" : "GPU";
+	if (/^iGPU \[#\d+\]/.test(group)) return "APU / iGPU";
+	if (/^[A-Za-z]?GPU \[#\d+\]/.test(group)) return /radeon\(tm\) graphics|radeon graphics|\bvega\b.*graphics|intel.*(uhd|iris|hd graphics)|\bapu\b/i.test(group) ? "APU / iGPU" : "GPU";
 	if (/^(CPU|Core|Intel Core|AMD Ryzen)\b/i.test(group) || /\b(Ryzen|Core i\d|Xeon|Threadripper)\b/i.test(group)) return "CPU";
 	if (/^S\.M\.A\.R\.T\.|^Drive:|NVMe|\bSSD\b/i.test(group)) return "Disks";
 	if (/DIMM|^Memory/i.test(group)) return "Memory";

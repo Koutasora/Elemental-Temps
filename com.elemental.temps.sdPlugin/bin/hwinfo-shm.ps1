@@ -1,7 +1,7 @@
 # Czyta pamięć współdzieloną HWiNFO (Global\HWiNFO_SENS_SM2) i co 2 s wypisuje jedną linię JSON:
 #   {"status":"ok","cpu":{temp,load,power,clock},"gpu":{"0":{...},"1":{...}}}
 # Czujniki dobierane są po nazwach z list priorytetów (Intel / AMD / NVIDIA / Radeon / Intel GPU) – bierzemy pierwszy najlepiej pasujący.
-# Karty GPU rozpoznajemy po nazwie czujnika HWiNFO: "GPU [#N]: ...".
+# Karty GPU rozpoznajemy po nazwie czujnika HWiNFO: "GPU [#N]: ..." (albo "iGPU [#N]" / "dGPU [#N]").
 param([int]$ParentPid = 0)
 $ErrorActionPreference = 'SilentlyContinue'
 Add-Type -AssemblyName System.Core
@@ -42,14 +42,20 @@ while ($true) {
 		if ($v.ReadUInt32(0) -eq 0x53695748 -and $age -lt 15) {
 			# numer karty GPU dla każdego czujnika ($null = to nie jest czujnik GPU)
 			$so = $v.ReadUInt32(20); $ss = $v.ReadUInt32(24); $sn = $v.ReadUInt32(28)
-			$gpuOf = @{}
+			$gpuOf = @{}; $gpuIdx = @{}
 			$snames = @{}; $gpuName = @{}; $diskOf = @{}; $diskName = @{}; $diskModel = @{}; $diskTemp = @{}; $diskCount = 0
 			for ($i = 0; $i -lt $sn; $i++) {
 				$sname = Str $v ($so + $i * $ss + 8) 128
 				$snames[[uint32]$i] = ($sname -replace '["\\]', '')
-				if ($sname -match '^GPU \[#(\d+)\]') {
-					$gn = [int]$Matches[1]; $gpuOf[[uint32]$i] = $gn
-					if (-not $gpuName.ContainsKey($gn)) { $gpuName[$gn] = ((($sname -replace '^GPU \[#\d+\]: ', '') -split ':')[0] -replace '["\\]', '') }
+				if ($sname -match '^([A-Za-z]?GPU) \[#(\d+)\]') {
+					# "GPU [#N]" zachowuje numer N; "iGPU [#0]" / "dGPU [#0]" (nowsze HWiNFO) dostają kolejny wolny numer
+					$gk = $Matches[0]
+					if (-not $gpuIdx.ContainsKey($gk)) {
+						if ($Matches[1] -eq 'GPU') { $gn = [int]$Matches[2] } else { $gn = 0; while ($gpuName.ContainsKey($gn)) { $gn++ } }
+						$gpuIdx[$gk] = $gn
+						$gpuName[$gn] = ((($sname -replace '^[A-Za-z]?GPU \[#\d+\]: ', '') -split ':')[0] -replace '["\\]', '')
+					}
+					$gpuOf[[uint32]$i] = $gpuIdx[$gk]
 				}
 				elseif ($sname -match '^S\.M\.A\.R\.T\.: (.*)$') {
 					# dysk: litery z "[C:]" albo model sprzed " ("

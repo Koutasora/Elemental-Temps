@@ -8,8 +8,9 @@ CPU, GPU and disk temperatures plus RAM usage on your Stream Deck keys, shown as
 
 ## Requirements
 
-- Windows 10/11 and Stream Deck software **7.1** or newer
-- [HWiNFO](https://www.hwinfo.com/) (the free version is enough) running in *Sensors* mode with **Shared Memory Support** enabled. RAM usage works without it. **Keep HWiNFO up to date** – new CPUs and graphics cards (for example the NVIDIA RTX 50 series) only show up in the sensor list in recent versions.
+- Windows 10/11 or macOS 12+, and Stream Deck software **7.1** or newer
+- Windows: [HWiNFO](https://www.hwinfo.com/) (the free version is enough) running in *Sensors* mode with **Shared Memory Support** enabled. RAM usage works without it. **Keep HWiNFO up to date** – new CPUs and graphics cards (for example the NVIDIA RTX 50 series) only show up in the sensor list in recent versions.
+- macOS: [macmon](https://github.com/vladkens/macmon) for CPU and GPU readings – see [macOS](#macos).
 
 ## Install and set up
 
@@ -41,10 +42,20 @@ Messages shown on a key instead of a value:
 
 Sensors are matched by their HWiNFO labels, with priority lists for Intel (`CPU Package`), AMD (`CPU (Tctl/Tdie)`, `CPU PPT`) and for NVIDIA, AMD and Intel graphics (`GPU [#N]` sensors, or `iGPU [#N]` / `dGPU [#N]` in newer HWiNFO versions); disks come from the S.M.A.R.T. sensors. Developed and tested on Intel + NVIDIA; AMD and Radeon / Intel GPUs are supported through HWiNFO sensor names and are less tested. If a key shows *No data* although HWiNFO shows the sensor, the label probably differs – please open an issue and include the sensor name, or see `$rules` in `com.elemental.temps.sdPlugin/bin/hwinfo-shm.ps1`.
 
+## macOS
+
+On a Mac the readings come from the free tool [macmon](https://github.com/vladkens/macmon) instead of HWiNFO. Install it once with `brew install macmon` (Apple Silicon, no admin rights needed); the plugin finds it in the usual Homebrew locations and starts it by itself.
+
+- **CPU Temperature** and **GPU Temperature**: temperature, load, power and clock of the Apple chip.
+- **Custom Sensor**: any macmon reading – temperatures, CPU / GPU / Neural Engine / RAM power, clocks and usage.
+- **RAM Usage** works without macmon and counts memory the way Activity Monitor does.
+- **Disk Temperature** is not available on macOS.
+- Without macmon the key shows **Install macmon**.
+- Intel Macs: only the CPU temperature, through `osx-cpu-temp` (`brew install osx-cpu-temp`).
+
 ## Good to know
 
-- The plugin starts a small `powershell.exe` helper to read HWiNFO's shared memory. Locked-down PCs or aggressive antivirus software may block it.
-- Windows only.
+- On Windows the plugin starts a small `powershell.exe` helper to read HWiNFO's shared memory. Locked-down PCs or aggressive antivirus software may block it.
 - Nothing is sent over the network. The only connection is an optional local read from `localhost:8085` (LibreHardwareMonitor) used as a CPU fallback.
 
 ## Development
@@ -57,6 +68,7 @@ npx streamdeck pack com.elemental.temps.sdPlugin --output dist --force
 ```
 
 - `src/sensors.ts` – readers (HWiNFO shared memory through a long-running PowerShell process; registry and LibreHardwareMonitor fallbacks for the CPU; RAM from the OS)
+- `src/sensors-mac.ts` – macOS readers (`macmon pipe`, `osx-cpu-temp` on Intel Macs, `vm_stat` for RAM)
 - `src/render.ts` – SVG key rendering
 - `src/plugin.ts` – the four actions (cpu, gpu, disk, ram), polling, alarm
 - `pi/template.html` + `scripts/gen-pi.mjs` – settings page template; the build generates one page per component (`ui/cpu.html`, …)

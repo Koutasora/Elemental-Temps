@@ -57,7 +57,7 @@ function themeFor(bg: string | null): Theme {
 		? { ...base, border: "rgba(0,0,0,.25)", track: "rgba(0,0,0,.16)", fg: "#0f172a", label: "#334155", sub: "#475569", warn: "#b45309" }
 		: { ...base, border: "rgba(255,255,255,.22)", track: "rgba(255,255,255,.2)", fg: "#ffffff", label: "#cbd5e1", sub: "#b4bfd1", warn: "#ffb454" };
 }
-const FONT = `font-family="Segoe UI, Arial, sans-serif"`;
+const FONT = `font-family="Segoe UI, -apple-system, Helvetica Neue, Arial, sans-serif"`;
 
 const pt = (deg: number) => {
 	const a = (deg * Math.PI) / 180;

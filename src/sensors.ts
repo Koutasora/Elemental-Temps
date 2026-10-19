@@ -4,6 +4,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { freemem, totalmem } from "node:os";
+import { macCpu, macGpu, macGpuList, macListSensors, macRam, macSensor, macStatus } from "./sensors-mac";
+
+const MAC = process.platform === "darwin";
 
 const run = promisify(execFile);
 
@@ -15,12 +18,14 @@ export type ListGroup = { label: string; children: ListItem[] };
 
 /** Lista dysków do wyboru w panelu: "C: · WD_BLACK SN770 500GB", wartość = numer (od 1). */
 export function listDisks(): ListItem[] {
+	if (MAC) return [];
 	ensureShm();
 	return [...shmLast.disks.entries()].sort((a, b) => a[0] - b[0]).map(([i, r]) => ({ value: String(i + 1), label: [r.name, r.model].filter(Boolean).join(" · ") || `Disk ${i + 1}` }));
 }
 
 /** Lista kart graficznych do wyboru w panelu, wartość = numer (od 1). */
 export function listGpus(): ListItem[] {
+	if (MAC) return macGpuList();
 	ensureShm();
 	return [...shmLast.gpus.entries()].sort((a, b) => a[0] - b[0]).map(([i, r]) => ({ value: String(i + 1), label: r.name || `GPU ${i + 1}` }));
 }
@@ -42,6 +47,7 @@ const CATEGORY_ORDER = ["Motherboard & other", "CPU", "GPU", "APU / iGPU", "Disk
 
 /** Wszystkie odczyty HWiNFO do wyboru w Custom Sensor, pogrupowane na płytę, CPU, GPU, APU, dyski i wentylatory. Klucz = "grupa|etykieta|typ". */
 export function listSensors(): ListGroup[] {
+	if (MAC) return macListSensors();
 	ensureShm();
 	const groups = new Map<string, ListItem[]>();
 	for (const [value, r] of shmLast.temps) {
@@ -56,18 +62,21 @@ export function listSensors(): ListGroup[] {
 
 /** Dowolny wybrany czujnik temperatury z HWiNFO. */
 export async function readSensor(id: string): Promise<Reading | null> {
+	if (MAC) return macSensor(id);
 	ensureShm();
 	return Date.now() - shmLast.at < 8000 ? (shmLast.temps.get(id) ?? null) : null;
 }
 
 /** Dysk (SMART "Drive Temperature") z HWiNFO – w kolejności czujników S.M.A.R.T. */
 export async function readDisk(index = 0): Promise<Reading | null> {
+	if (MAC) return null;
 	ensureShm();
 	return Date.now() - shmLast.at < 8000 ? (shmLast.disks.get(index) ?? null) : null;
 }
 
 /** RAM: zajętość w % (`temp`) prosto z systemu, bez HWiNFO; `name` = "użyte / razem GB". */
 export function readRam(): Reading {
+	if (MAC) return macRam();
 	const total = totalmem();
 	const used = total - freemem();
 	return { temp: (used / total) * 100, name: `${(used / 1024 ** 3).toFixed(1)} / ${(total / 1024 ** 3).toFixed(0)} GB`, source: "os" };
@@ -75,6 +84,7 @@ export function readRam(): Reading {
 
 /** GPU: HWiNFO pamięć współdzielona (każda karta osobno, po nazwie czujnika "GPU [#N]"). */
 export async function readGpu(index = 0): Promise<Reading | null> {
+	if (MAC) return index > 0 ? null : macGpu();
 	ensureShm();
 	if (Date.now() - shmLast.at >= 8000) return null;
 	const r = shmLast.gpus.get(index);
@@ -86,12 +96,13 @@ export async function readGpu(index = 0): Promise<Reading | null> {
 
 /** CPU: HWiNFO pamięć współdzielona -> HWiNFO rejestr ("Report value in Gadget") -> LibreHardwareMonitor (HTTP). */
 export async function readCpu(): Promise<Reading | null> {
+	if (MAC) return macCpu();
 	return readCpuShm() ?? (await readCpuHwinfo()) ?? (await readCpuLhm());
 }
 
 // --- HWiNFO shared memory: jeden długo działający proces PowerShell, jedna linia JSON na 2 s ---
 let shmProc: ChildProcess | undefined;
-export type ShmStatus = "ok" | "notrunning" | "disabled" | "unknown";
+export type ShmStatus = "ok" | "notrunning" | "disabled" | "nomacmon" | "unknown";
 let shmLast: { cpu: Reading | null; gpus: Map<number, Reading>; disks: Map<number, Reading>; temps: Map<string, Reading>; status: ShmStatus; at: number } = { cpu: null, gpus: new Map(), disks: new Map(), temps: new Map(), status: "unknown", at: 0 };
 let shmStartedAt = 0;
 
@@ -126,6 +137,7 @@ function readCpuShm(): Reading | null {
 
 /** Stan źródła HWiNFO – do komunikatu na klawiszu, gdy brak danych. */
 export function shmStatus(): ShmStatus {
+	if (MAC) return macStatus();
 	return Date.now() - shmLast.at < 8000 ? shmLast.status : "unknown";
 }
 

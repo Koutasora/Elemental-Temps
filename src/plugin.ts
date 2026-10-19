@@ -87,6 +87,10 @@ function subText(r: Reading, s: Settings): string | undefined {
 
 /** Komunikat dwujęzyczny (PL / EN), gdy nie ma danych. */
 function noDataText(sensor: Sensor): string {
+	if (process.platform === "darwin") {
+		if (sensor === "disk") return "Not on\nmacOS";
+		if (shmStatus() === "nomacmon") return "Install\nmacmon";
+	}
 	switch (shmStatus()) {
 		case "notrunning":
 			return "Start\nHWiNFO";
@@ -100,7 +104,8 @@ function noDataText(sensor: Sensor): string {
 function beep(): void {
 	if (Date.now() - lastSound < 30_000) return; // nie częściej niż co 30 s
 	lastSound = Date.now();
-	spawn("powershell", ["-NoProfile", "-Command", "[System.Media.SystemSounds]::Hand.Play(); Start-Sleep -Milliseconds 1500"], { windowsHide: true, stdio: "ignore" });
+	if (process.platform === "darwin") spawn("/usr/bin/afplay", ["/System/Library/Sounds/Basso.aiff"], { stdio: "ignore" });
+	else spawn("powershell", ["-NoProfile", "-Command", "[System.Media.SystemSounds]::Hand.Play(); Start-Sleep -Milliseconds 1500"], { windowsHide: true, stdio: "ignore" });
 }
 
 /** Aktualizuje stan alarmu (z histerezą 2 °C) i zwraca, czy klawisz alarmuje. */
@@ -239,6 +244,10 @@ for (const a of [new CpuTemperature(), new GpuTemperature(), new DiskTemperature
 /** Pusta lista = jedna nieaktywna pozycja z przyczyną; "__MSG_x__" tłumaczy panel (lokalizacja pozycji w sdpi-select). */
 function withFallback<T extends ListItem | ListGroup>(items: T[], what: "Gpu" | "Disk" | "Sensor"): (T | ListItem & { disabled: boolean })[] {
 	if (items.length) return items;
+	if (process.platform === "darwin") {
+		const k = what === "Disk" ? "listDiskMac" : shmStatus() === "nomacmon" ? "listInstallMacmon" : `listNo${what}`;
+		return [{ label: `__MSG_${k}__`, value: what === "Sensor" ? "" : "1", disabled: true }];
+	}
 	const key = shmStatus() === "notrunning" ? "listStartHwinfo" : shmStatus() === "disabled" ? "listEnableShm" : `listNo${what}`;
 	// wartość = domyślny numer karty/dysku, żeby ewentualny zapis tej pozycji do ustawień nie zostawił pustego wyboru po powrocie danych
 	return [{ label: `__MSG_${key}__`, value: what === "Sensor" ? "" : "1", disabled: true }];
